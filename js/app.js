@@ -496,8 +496,9 @@ function initErrorText() {
 }
 function updateLoginModeNote() {
   const note = $('loginModeNote');
-  if (state.online) { note.className = 'login-mode-note mode-online'; note.textContent = t('mode.online'); }
-  else if (state.initError) { note.className = 'login-mode-note mode-err'; note.textContent = '⛔ ' + initErrorText(); }
+  if (state.online) { note.style.display = 'none'; note.textContent = ''; return; }
+  note.style.display = '';
+  if (state.initError) { note.className = 'login-mode-note mode-err'; note.textContent = '⛔ ' + initErrorText(); }
   else { note.className = 'login-mode-note mode-local'; note.textContent = t('mode.local'); }
 }
 
