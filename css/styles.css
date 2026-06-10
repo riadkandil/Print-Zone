@@ -278,8 +278,14 @@ html.dark .icon-btn .icon-light{display:none}
 .items-count{font-size:.74rem;font-weight:700;color:var(--text-dim)}
 .history-card .total{font-weight:900;color:var(--green);font-size:1rem}
 .by-badge{font-size:.64rem;font-weight:800;padding:2px 8px;border-radius:99px;background:var(--surface-3);color:var(--text-dim);margin-inline-start:6px}
-.btn-delete-transaction{border:none;background:var(--red-light);color:var(--red);border-radius:8px;padding:6px 14px;font-size:.78rem;font-weight:800;margin-top:8px;transition:background .15s, color .15s}
+.btn-delete-transaction{border:none;background:var(--red-light);color:var(--red);border-radius:8px;padding:6px 14px;font-size:.78rem;font-weight:800;transition:background .15s, color .15s}
 .btn-delete-transaction:hover{background:var(--red);color:#fff}
+.history-card-actions{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.btn-mistake-toggle{border:none;background:var(--amber-light);color:var(--amber);border-radius:8px;padding:6px 14px;font-size:.78rem;font-weight:800;transition:background .15s, color .15s;display:inline-flex;align-items:center;justify-content:center;gap:6px;line-height:1}
+.btn-mistake-toggle:hover{background:var(--amber);color:#fff}
+.history-card.mistaken{border-color:var(--red);background:var(--red-50)}
+.history-card.mistaken::before{content:'';position:absolute;inset-inline-start:0;top:0;bottom:0;width:4px;background:var(--red);border-radius:99px}
+.mistake-badge{display:inline-flex;align-items:center;gap:4px;font-size:.68rem;font-weight:800;padding:2px 9px;border-radius:99px;background:var(--red-light);color:var(--red);margin-inline-start:6px;vertical-align:middle}
 .empty-big{text-align:center;padding:50px 20px;color:var(--text-dim)}
 .empty-big .empty-icon{font-size:2.6rem;margin-bottom:8px}
 .empty-big p{font-size:.88rem;font-weight:700}

@@ -141,7 +141,10 @@ const I18N = {
     'filter.all': 'All', 'filter.today': 'Today', 'filter.week': 'Week', 'filter.month': 'Month',
     'hist.empty': 'No transactions yet', 'hist.noresults': 'No results',
     'hist.pieces': 'pcs', 'hist.items': 'items', 'hist.delete': 'Delete',
-    'hist.periodTotal': 'Total for shown period', 'hist.delDenied': 'Employees can only delete a transaction within 10 minutes of saving it',
+    'hist.periodTotal': 'Total for shown period', 'hist.delDenied': 'Only the admin can delete — mark it as a mistake instead',
+    'hist.mistake': 'Mistake', 'hist.markMistake': 'Mark as mistake', 'hist.unmarkMistake': 'Unmark mistake',
+    'confirm.mistake': 'Mark this transaction as a mistake?', 'confirm.mistakeSub': 'The admin will review it and delete it.',
+    'confirm.mark': 'Mark', 'toast.mistakeMarked': 'Marked as mistake ✓', 'toast.mistakeUnmarked': 'Mark removed ✓',
     'confirm.delTx': 'Delete this transaction?', 'confirm.delTxSub': 'This cannot be undone.',
     'confirm.delete': 'Delete', 'confirm.cancel': 'Cancel',
     'mach.title': 'Machine Counters', 'mach.counter': 'Machine counter', 'mach.last': 'Last reading:',
@@ -217,7 +220,10 @@ const I18N = {
     'filter.all': 'الكل', 'filter.today': 'اليوم', 'filter.week': 'الأسبوع', 'filter.month': 'الشهر',
     'hist.empty': 'لا توجد معاملات مسجلة', 'hist.noresults': 'لا توجد نتائج',
     'hist.pieces': 'قطعة', 'hist.items': 'خدمة', 'hist.delete': 'حذف',
-    'hist.periodTotal': 'إجمالي الفترة المعروضة', 'hist.delDenied': 'يمكن للموظف حذف المعاملة خلال 10 دقائق فقط من حفظها',
+    'hist.periodTotal': 'إجمالي الفترة المعروضة', 'hist.delDenied': 'الحذف للمدير فقط — حدّدها كخطأ بدلاً من ذلك',
+    'hist.mistake': 'خطأ', 'hist.markMistake': 'تحديد كخطأ', 'hist.unmarkMistake': 'إلغاء تحديد الخطأ',
+    'confirm.mistake': 'تحديد هذه المعاملة كخطأ؟', 'confirm.mistakeSub': 'سيراجعها المدير ثم يحذفها.',
+    'confirm.mark': 'تحديد', 'toast.mistakeMarked': 'تم التحديد كخطأ ✓', 'toast.mistakeUnmarked': 'تم إلغاء التحديد ✓',
     'confirm.delTx': 'حذف هذه المعاملة؟', 'confirm.delTxSub': 'لا يمكن التراجع عن الحذف.',
     'confirm.delete': 'حذف', 'confirm.cancel': 'إلغاء',
     'mach.title': 'عدادات الماكينات', 'mach.counter': 'عداد الماكينة', 'mach.last': 'آخر قراءة:',
@@ -385,6 +391,11 @@ const LocalStore = {
     localStorage.setItem('pz_tx', JSON.stringify(state.transactions));
     refreshAfterData();
   },
+  async updateTx(id, patch) {
+    state.transactions = state.transactions.map(t => t.id === id ? { ...t, ...patch } : t);
+    localStorage.setItem('pz_tx', JSON.stringify(state.transactions));
+    refreshAfterData();
+  },
   async saveMachines(machines) {
     state.machines = machines;
     localStorage.setItem('pz_mc', JSON.stringify(machines));
@@ -437,6 +448,7 @@ const FireStore = {
   },
   async addTx(tx) { await db.collection('transactions').add(tx); },
   async delTx(id) { await db.collection('transactions').doc(id).delete(); },
+  async updateTx(id, patch) { await db.collection('transactions').doc(id).update(patch); },
   async saveMachines(machines) {
     const batch = db.batch();
     const existing = new Set(state.machines.map(m => m.id));
@@ -567,10 +579,10 @@ document.querySelectorAll('.nav-item').forEach(btn => {
 
 /* ==================== CONFIRM MODAL ==================== */
 let confirmCb = null;
-function askConfirm(title, sub, cb) {
+function askConfirm(title, sub, cb, yesLabel) {
   $('confirmTitle').textContent = title;
   $('confirmSub').textContent = sub;
-  $('confirmYes').textContent = t('confirm.delete');
+  $('confirmYes').textContent = yesLabel || t('confirm.delete');
   $('confirmNo').textContent = t('confirm.cancel');
   confirmCb = cb;
   $('confirmOverlay').classList.add('visible');
@@ -895,9 +907,7 @@ function getFilteredHistory() {
 }
 
 function canDeleteTx(tx) {
-  if (state.role === 'admin') return true;
-  const age = Date.now() - new Date(tx.createdAt || 0).getTime();
-  return age < 10 * 60 * 1000;
+  return state.role === 'admin';
 }
 
 function renderHistory() {
@@ -921,10 +931,14 @@ function renderHistory() {
     }))].slice(0, 6).join('');
     const engTotal = (tx.items || []).filter(it => it.engLength > 0).reduce((s, it) => s + it.engLength, 0);
     const byBadge = tx.createdBy ? `<span class="by-badge">${t(tx.createdBy === 'admin' ? 'role.admin' : 'role.employee')}</span>` : '';
+    const mistakeBadge = tx.mistake ? `<span class="mistake-badge"><i data-lucide="alert-triangle"></i> ${t('hist.mistake')}</span>` : '';
     const delBtn = canDeleteTx(tx) ? `<button class="btn-delete-transaction" data-id="${tx.id}">${t('hist.delete')}</button>` : '';
-    return `<div class="history-card">
+    const mistakeBtn = (state.role !== 'admin' || tx.mistake)
+      ? `<button class="btn-mistake-toggle" data-id="${tx.id}"><i data-lucide="alert-triangle"></i> ${t(tx.mistake ? 'hist.unmarkMistake' : 'hist.markMistake')}</button>`
+      : '';
+    return `<div class="history-card${tx.mistake ? ' mistaken' : ''}">
       <div class="history-card-head">
-        <span class="client">${escapeHtml(tx.client)}${byBadge}</span>
+        <span class="client">${escapeHtml(tx.client)}${byBadge}${mistakeBadge}</span>
         <span class="date">${fmtDate(tx.date)}</span>
       </div>
       ${tx.notes ? `<div class="notes">${escapeHtml(tx.notes)}</div>` : ''}
@@ -934,7 +948,7 @@ function renderHistory() {
         <span class="items-count">${tx.pieces} ${t('hist.pieces')} · ${(tx.items || []).length} ${t('hist.items')}</span>
         <span class="total">${fmtMoney(tx.total || 0)}</span>
       </div>
-      ${delBtn}
+      ${(mistakeBtn || delBtn) ? `<div class="history-card-actions">${mistakeBtn}${delBtn}</div>` : ''}
     </div>`;
   }).join('');
 
@@ -948,6 +962,21 @@ function renderHistory() {
         toast(t('toast.deleted'));
         renderHistory();
       });
+    });
+  });
+  list.querySelectorAll('.btn-mistake-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tx = state.transactions.find(t2 => String(t2.id) === btn.dataset.id);
+      if (!tx) return;
+      if (tx.mistake) {
+        store.updateTx(tx.id, { mistake: false }).then(() => { toast(t('toast.mistakeUnmarked')); renderHistory(); });
+      } else {
+        askConfirm(t('confirm.mistake'), t('confirm.mistakeSub'), async () => {
+          await store.updateTx(tx.id, { mistake: true });
+          toast(t('toast.mistakeMarked'));
+          renderHistory();
+        }, t('confirm.mark'));
+      }
     });
   });
   refreshIcons();
