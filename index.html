@@ -97,6 +97,17 @@
       <label data-i18n="newtx.notes"></label>
       <textarea id="txNotes" data-i18n-ph="newtx.notesPh"></textarea>
     </div>
+    <div class="section-label" style="margin-top:12px"><span class="dot"></span> <span data-i18n="pay.section"></span></div>
+    <div class="chip-row" id="payChips">
+      <div class="chip sel" data-pay="cash"><i data-lucide="banknote"></i> <span data-pay-label="cash"></span></div>
+      <div class="chip" data-pay="instapay"><i data-lucide="smartphone"></i> <span data-pay-label="instapay"></span></div>
+      <div class="chip" data-pay="vodafone"><i data-lucide="phone"></i> <span data-pay-label="vodafone"></span></div>
+      <div class="chip" data-pay="other"><i data-lucide="pencil"></i> <span data-pay-label="other"></span></div>
+    </div>
+    <div class="field" id="payOtherField" style="display:none;margin-top:10px">
+      <label data-i18n="pay.specify"></label>
+      <input type="text" id="payOtherName" data-i18n-ph="pay.otherPh">
+    </div>
   </div>
 
   <div class="price-mode-toggle">

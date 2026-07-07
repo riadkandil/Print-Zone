@@ -134,6 +134,7 @@ const I18N = {
     'newtx.title': 'New Transaction', 'newtx.client': 'Client name', 'newtx.optional': 'Optional',
     'newtx.date': 'Date *', 'newtx.notes': 'Extra notes', 'newtx.notesPh': 'Any extra details...',
     'newtx.defaultClient': 'Client',
+    'pay.section': 'Payment method', 'pay.specify': 'Specify method', 'pay.otherPh': 'e.g. Bank transfer...', 'xh.pay': 'Payment',
     'price.mode': 'Price mode', 'price.perItem': 'Per item', 'price.final': 'Final price',
     'price.unit': 'Price (per item)', 'price.total': 'Total price',
     'svc.section': 'Service type', 'op.section': 'Operation', 'color.section': 'Color',
@@ -223,6 +224,7 @@ const I18N = {
     'newtx.title': 'معاملة جديدة', 'newtx.client': 'اسم العميل', 'newtx.optional': 'اختياري',
     'newtx.date': 'التاريخ *', 'newtx.notes': 'ملاحظات إضافية', 'newtx.notesPh': 'أي تفاصيل إضافية...',
     'newtx.defaultClient': 'عميل',
+    'pay.section': 'طريقة الدفع', 'pay.specify': 'حدد الطريقة', 'pay.otherPh': 'مثلاً: تحويل بنكي...', 'xh.pay': 'الدفع',
     'price.mode': 'وضع السعر', 'price.perItem': 'لكل قطعة', 'price.final': 'سعر نهائي',
     'price.unit': 'السعر (لكل قطعة)', 'price.total': 'السعر الإجمالي',
     'svc.section': 'نوع الخدمة', 'op.section': 'العملية', 'color.section': 'اللون',
@@ -312,12 +314,19 @@ const EXP_LABELS = {
   inventory: { en: 'Inventory / Products', ar: 'بضاعة ومشتريات' },
   other: { en: 'Other', ar: 'أخرى' },
 };
+const PAY_LABELS = {
+  cash: { en: 'Cash', ar: 'كاش' },
+  instapay: { en: 'InstaPay', ar: 'انستاباي' },
+  vodafone: { en: 'Vodafone Cash', ar: 'فودافون كاش' },
+  other: { en: 'Other', ar: 'أخرى' },
+};
 
 let lang = localStorage.getItem('pz_lang') || 'ar';
 
 function t(key) { return (I18N[lang] && I18N[lang][key]) || I18N.en[key] || key; }
 function svcLabel(k) { return SVC_LABELS[k] ? SVC_LABELS[k][lang] : k; }
 function expLabel(e) { if (e.type === 'other') return e.otherLabel || EXP_LABELS.other[lang]; return EXP_LABELS[e.type] ? EXP_LABELS[e.type][lang] : e.type; }
+function payLabel(tx) { if (!tx.payMethod) return ''; if (tx.payMethod === 'other') return tx.payOther || PAY_LABELS.other[lang]; return PAY_LABELS[tx.payMethod] ? PAY_LABELS[tx.payMethod][lang] : tx.payMethod; }
 function valLabel(k) { if (!k || k === '—') return '—'; return VAL_LABELS[k] ? VAL_LABELS[k][lang] : k; }
 function fmtMoney(n) { return (Math.round(n * 100) / 100).toLocaleString(lang === 'ar' ? 'en-EG' : 'en-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + t('cur'); }
 function fmtDate(d) { try { return new Date(d + 'T00:00:00').toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-GB', { year: 'numeric', month: 'short', day: 'numeric' }); } catch (e) { return d; } }
@@ -332,6 +341,7 @@ function applyI18n() {
   document.querySelectorAll('[data-op-label]').forEach(el => { el.textContent = valLabel(el.dataset.opLabel); });
   document.querySelectorAll('[data-val-label]').forEach(el => { el.textContent = valLabel(el.dataset.valLabel); });
   document.querySelectorAll('[data-exp-label]').forEach(el => { el.textContent = EXP_LABELS[el.dataset.expLabel] ? EXP_LABELS[el.dataset.expLabel][lang] : el.dataset.expLabel; });
+  document.querySelectorAll('[data-pay-label]').forEach(el => { el.textContent = PAY_LABELS[el.dataset.payLabel] ? PAY_LABELS[el.dataset.payLabel][lang] : el.dataset.payLabel; });
   const langBtnTxt = lang === 'ar' ? 'EN' : 'ع';
   $('langToggle').textContent = langBtnTxt;
   $('langToggleLogin').textContent = langBtnTxt;
@@ -369,6 +379,7 @@ const state = {
   expenses: [],           // [{id, type, otherLabel, amount, date, note, createdAt, createdBy}]
   expFilter: 'all',
   selExpType: null,
+  selPay: 'cash',
   machines: [],           // [{id, name, order, records:[{value,date,at}]}]
   settings: null,         // {empHash, adminHash}
   online: false,          // firebase mode
@@ -668,6 +679,22 @@ function updatePriceMode(final) {
 $('btnPerItem').addEventListener('click', () => updatePriceMode(false));
 $('btnFinalPrice').addEventListener('click', () => updatePriceMode(true));
 
+/* ==================== PAYMENT METHOD ==================== */
+$('payChips').addEventListener('click', e => {
+  const chip = e.target.closest('.chip'); if (!chip) return;
+  $('payChips').querySelectorAll('.chip').forEach(c => c.classList.remove('sel'));
+  chip.classList.add('sel');
+  state.selPay = chip.dataset.pay;
+  $('payOtherField').style.display = state.selPay === 'other' ? '' : 'none';
+  if (state.selPay === 'other') $('payOtherName').focus();
+});
+function resetPayChips() {
+  state.selPay = 'cash';
+  $('payChips').querySelectorAll('.chip').forEach(c => c.classList.toggle('sel', c.dataset.pay === 'cash'));
+  $('payOtherField').style.display = 'none';
+  $('payOtherName').value = '';
+}
+
 /* ==================== SERVICE GRID ==================== */
 $('serviceGrid').addEventListener('click', e => {
   const btn = e.target.closest('.svc-btn');
@@ -916,6 +943,8 @@ $('btnSaveTx').addEventListener('click', async () => {
     client: $('clientName').value.trim() || t('newtx.defaultClient'),
     date,
     notes: $('txNotes').value.trim(),
+    payMethod: state.selPay || 'cash',
+    payOther: state.selPay === 'other' ? ($('payOtherName').value.trim() || null) : null,
     items: state.invoice.map(({ id, ...rest }) => rest),
     total: state.invoice.reduce((s, it) => s + it.total, 0),
     pieces: state.invoice.reduce((s, it) => s + it.qty, 0),
@@ -930,6 +959,7 @@ $('btnSaveTx').addEventListener('click', async () => {
     state.invoice = [];
     renderInvoice();
     $('clientName').value = ''; $('txNotes').value = ''; $('txDate').value = todayStr();
+    resetPayChips();
     document.querySelectorAll('.svc-btn').forEach(b => b.classList.remove('selected'));
     $('subPanel').classList.remove('visible');
     $('engFields').classList.remove('visible');
@@ -1001,7 +1031,7 @@ function renderHistory() {
         <span class="date">${fmtDate(tx.date)}</span>
       </div>
       ${tx.notes ? `<div class="notes">${escapeHtml(tx.notes)}</div>` : ''}
-      <div class="history-card-tags">${tagSet}</div>
+      <div class="history-card-tags">${tx.payMethod ? `<span class="tag tag-finish">${escapeHtml(payLabel(tx))}</span>` : ''}${tagSet}</div>
       ${engTotal > 0 ? `<div style="font-size:.72rem;color:var(--teal);margin-bottom:4px;font-weight:700"><i data-lucide="ruler"></i> ${engTotal.toFixed(2)} ${t('eng.m')}</div>` : ''}
       <div class="history-card-bottom">
         <span class="items-count">${tx.pieces} ${t('hist.pieces')} · ${(tx.items || []).length} ${t('hist.items')}</span>
@@ -1312,6 +1342,7 @@ $('btnExportXlsx').addEventListener('click', () => {
         [t('xh.date')]: tx.date,
         [t('xh.client')]: tx.client,
         [t('xh.by')]: tx.createdBy ? t(tx.createdBy === 'admin' ? 'role.admin' : 'role.employee') : '',
+        [t('xh.pay')]: tx.payMethod ? payLabel(tx) : '',
         [t('xh.notes')]: tx.notes || '',
         [t('xh.svc')]: it.type === 'custom' ? (lang === 'ar' ? 'خدمة أخرى' : 'Custom') : svcLabel(it.svc),
         [t('xh.detail')]: it.type === 'paper' ? valLabel(it.op) : (it.desc || ''),
@@ -1332,7 +1363,7 @@ $('btnExportXlsx').addEventListener('click', () => {
   rows.push({});
   rows.push({ [t('xh.notes')]: t('xh.grand'), [t('xh.qty')]: grandPieces, [t('xh.total')]: Math.round(grandTotal * 100) / 100 });
   const ws1 = XLSX.utils.json_to_sheet(rows);
-  ws1['!cols'] = [{ wch: 5 }, { wch: 11 }, { wch: 18 }, { wch: 10 }, { wch: 22 }, { wch: 14 }, { wch: 14 }, { wch: 9 }, { wch: 11 }, { wch: 9 }, { wch: 13 }, { wch: 16 }, { wch: 8 }, { wch: 10 }, { wch: 10 }, { wch: 12 }];
+  ws1['!cols'] = [{ wch: 5 }, { wch: 11 }, { wch: 18 }, { wch: 10 }, { wch: 12 }, { wch: 22 }, { wch: 14 }, { wch: 14 }, { wch: 9 }, { wch: 11 }, { wch: 9 }, { wch: 13 }, { wch: 16 }, { wch: 8 }, { wch: 10 }, { wch: 10 }, { wch: 12 }];
   XLSX.utils.book_append_sheet(wb, ws1, t('sheet.tx'));
 
   /* Sheet 2: summary */
@@ -1412,13 +1443,14 @@ $('btnExportCsv').addEventListener('click', () => {
   if (!txs.length) { toast(t('toast.expNone'), true); return; }
 
   const esc = v => { const s = String(v == null ? '' : v); return s.includes(',') || s.includes('"') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s; };
-  const headers = [t('xh.no'),t('xh.date'),t('xh.client'),t('xh.by'),t('xh.notes'),t('xh.svc'),t('xh.detail'),t('xh.color'),t('xh.sides'),t('xh.finish'),t('xh.engLen'),t('xh.engNote'),t('xh.qty'),t('xh.price'),t('xh.final'),t('xh.total')];
+  const headers = [t('xh.no'),t('xh.date'),t('xh.client'),t('xh.by'),t('xh.pay'),t('xh.notes'),t('xh.svc'),t('xh.detail'),t('xh.color'),t('xh.sides'),t('xh.finish'),t('xh.engLen'),t('xh.engNote'),t('xh.qty'),t('xh.price'),t('xh.final'),t('xh.total')];
   const rows = [headers.map(esc).join(',')];
   txs.forEach((tx, ti) => {
     (tx.items || []).forEach(it => {
       rows.push([
         ti+1, tx.date, tx.client,
         tx.createdBy ? t(tx.createdBy === 'admin' ? 'role.admin' : 'role.employee') : '',
+        tx.payMethod ? payLabel(tx) : '',
         tx.notes || '',
         it.type === 'custom' ? (lang === 'ar' ? 'خدمة أخرى' : 'Custom') : svcLabel(it.svc),
         it.type === 'paper' ? valLabel(it.op) : (it.desc || ''),
