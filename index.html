@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -239,6 +239,49 @@
 </div>
 </div>
 
+<!-- PAGE: OPERATIONAL COSTS -->
+<div class="page" id="pageExpenses">
+<div class="page-pad">
+  <div class="page-header-card">
+    <div class="page-title"><span class="title-icon"><i data-lucide="wallet"></i></span> <span data-i18n="oc.title"></span></div>
+    <div class="section-label" style="margin-top:4px"><span class="dot"></span> <span data-i18n="oc.type"></span></div>
+    <div class="chip-row" id="expTypeChips">
+      <div class="chip" data-exp="repair"><i data-lucide="wrench"></i> <span data-exp-label="repair"></span></div>
+      <div class="chip" data-exp="internet"><i data-lucide="wifi"></i> <span data-exp-label="internet"></span></div>
+      <div class="chip" data-exp="electricity"><i data-lucide="zap"></i> <span data-exp-label="electricity"></span></div>
+      <div class="chip" data-exp="salaries"><i data-lucide="users"></i> <span data-exp-label="salaries"></span></div>
+      <div class="chip" data-exp="inventory"><i data-lucide="package"></i> <span data-exp-label="inventory"></span></div>
+      <div class="chip" data-exp="other"><i data-lucide="pencil"></i> <span data-exp-label="other"></span></div>
+    </div>
+    <div class="field" id="expOtherField" style="display:none;margin-top:10px">
+      <label data-i18n="oc.otherType"></label>
+      <input type="text" id="expOtherName" data-i18n-ph="oc.otherPh">
+    </div>
+    <div class="form-row" style="margin-top:10px">
+      <div class="field"><label data-i18n="oc.amount"></label><input type="number" id="expAmount" min="0" step="0.01" placeholder="0.00"></div>
+      <div class="field"><label data-i18n="oc.date"></label><input type="date" id="expDate"></div>
+    </div>
+    <div class="field" style="margin-top:10px">
+      <label data-i18n="oc.note"></label>
+      <textarea id="expNote" data-i18n-ph="oc.notePh"></textarea>
+    </div>
+    <button class="btn-save-transaction" id="btnSaveExp" disabled><i data-lucide="save"></i> <span data-i18n="oc.save"></span></button>
+  </div>
+
+  <div class="history-filters" id="expFilters">
+    <div class="filter-chip active" data-filter="all" data-i18n="filter.all"></div>
+    <div class="filter-chip" data-filter="today" data-i18n="filter.today"></div>
+    <div class="filter-chip" data-filter="week" data-i18n="filter.week"></div>
+    <div class="filter-chip" data-filter="month" data-i18n="filter.month"></div>
+  </div>
+  <div class="period-total-bar visible" id="expTotalBar">
+    <span class="lbl" data-i18n="oc.periodTotal"></span>
+    <span class="val" id="expTotalVal" style="color:var(--orange)"></span>
+  </div>
+  <div id="expensesList"></div>
+</div>
+</div>
+
 <!-- PAGE: DASHBOARD (admin) -->
 <div class="page" id="pageDashboard">
 <div class="page-pad">
@@ -252,6 +295,9 @@
     <div class="dash-stat"><div class="ds-icon"><i data-lucide="users"></i></div><div class="ds-label" data-i18n="dash.clients"></div><div class="ds-value" id="dTotalClients">0</div></div>
     <div class="dash-stat"><div class="ds-icon"><i data-lucide="sun"></i></div><div class="ds-label" data-i18n="dash.today"></div><div class="ds-value" id="dTodayRev">0</div></div>
     <div class="dash-stat"><div class="ds-icon"><i data-lucide="calendar"></i></div><div class="ds-label" data-i18n="dash.month"></div><div class="ds-value" id="dMonthRev">0</div></div>
+    <div class="dash-stat"><div class="ds-icon"><i data-lucide="wallet"></i></div><div class="ds-label" data-i18n="dash.costs"></div><div class="ds-value" id="dTotalCosts" style="color:var(--orange)">0</div></div>
+    <div class="dash-stat"><div class="ds-icon"><i data-lucide="trending-down"></i></div><div class="ds-label" data-i18n="dash.monthCosts"></div><div class="ds-value" id="dMonthCosts" style="color:var(--orange)">0</div></div>
+    <div class="dash-stat"><div class="ds-icon"><i data-lucide="coins"></i></div><div class="ds-label" data-i18n="dash.net"></div><div class="ds-value" id="dMonthNet">0</div></div>
   </div>
   <div class="dash-section"><h3><i data-lucide="trending-up"></i> <span data-i18n="dash.topSvc"></span></h3><div id="dashServices"></div></div>
   <div class="dash-section"><h3><i data-lucide="package"></i> <span data-i18n="dash.topPaper"></span></h3><div id="dashPapers"></div></div>
@@ -327,6 +373,7 @@
   <button class="nav-item active" data-page="pageNew"><span class="nav-icon"><i data-lucide="plus"></i></span><span class="nav-label" data-i18n="nav.new"></span></button>
   <button class="nav-item" data-page="pageHistory"><span class="nav-icon"><i data-lucide="history"></i></span><span class="nav-label" data-i18n="nav.history"></span></button>
   <button class="nav-item" data-page="pageMachines"><span class="nav-icon"><i data-lucide="settings-2"></i></span><span class="nav-label" data-i18n="nav.machines"></span></button>
+  <button class="nav-item" data-page="pageExpenses"><span class="nav-icon"><i data-lucide="wallet"></i></span><span class="nav-label" data-i18n="nav.expenses"></span></button>
   <button class="nav-item admin-only" data-page="pageDashboard"><span class="nav-icon"><i data-lucide="bar-chart-2"></i></span><span class="nav-label" data-i18n="nav.dashboard"></span></button>
   <button class="nav-item admin-only" data-page="pageSettings"><span class="nav-icon"><i data-lucide="sliders"></i></span><span class="nav-label" data-i18n="nav.settings"></span></button>
 </div>

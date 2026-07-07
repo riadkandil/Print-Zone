@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 /* ════════════════════════════════════════════════════════════════════
    ⚙️ FIREBASE CONFIG — إعدادات فايربيز
    To make the website online (shared between all devices), paste your
@@ -117,7 +117,17 @@ const I18N = {
     'mode.local': '⚠️ Local mode — data stays on this device. Admin can connect Firebase from Settings.',
     'mode.online': '✓ Online — data is shared across all devices',
     'nav.new': 'New', 'nav.history': 'History', 'nav.machines': 'Machines',
-    'nav.dashboard': 'Dashboard', 'nav.settings': 'Settings',
+    'nav.dashboard': 'Dashboard', 'nav.settings': 'Settings', 'nav.expenses': 'Costs',
+    'oc.title': 'Operational Costs', 'oc.type': 'Cost type', 'oc.amount': 'Amount',
+    'oc.date': 'Date *', 'oc.note': 'Note', 'oc.notePh': 'Optional details...',
+    'oc.otherType': 'Specify the type', 'oc.otherPh': 'e.g. Rent...',
+    'oc.save': 'Save Cost', 'oc.saved': 'Cost saved ✓',
+    'oc.needAll': 'Enter the type, amount and date',
+    'oc.empty': 'No costs recorded yet', 'oc.periodTotal': 'Costs for shown period',
+    'oc.delConfirm': 'Delete this cost?', 'oc.delDenied': 'Only the admin can delete costs',
+    'dash.costs': 'Total costs', 'dash.monthCosts': 'Costs this month', 'dash.net': 'Net this month',
+    'xh.type': 'Cost type', 'xh.amount': 'Amount', 'sheet.exp': 'Expenses',
+    'sum.costs': 'Total costs', 'sum.net': 'Net (revenue − costs)',
     'status.online': 'Online', 'status.offline': 'Offline — will sync', 'status.local': 'Local',
     'role.employee': 'Employee', 'role.admin': 'Admin',
     'logout.title': 'Sign out',
@@ -196,7 +206,17 @@ const I18N = {
     'mode.local': '⚠️ وضع محلي — البيانات على هذا الجهاز فقط. يمكن للمدير ربط Firebase من الإعدادات.',
     'mode.online': '✓ متصل — البيانات مشتركة بين كل الأجهزة',
     'nav.new': 'جديد', 'nav.history': 'السجل', 'nav.machines': 'الماكينات',
-    'nav.dashboard': 'لوحة المعلومات', 'nav.settings': 'الإعدادات',
+    'nav.dashboard': 'لوحة المعلومات', 'nav.settings': 'الإعدادات', 'nav.expenses': 'المصاريف',
+    'oc.title': 'المصاريف التشغيلية', 'oc.type': 'نوع المصروف', 'oc.amount': 'المبلغ',
+    'oc.date': 'التاريخ *', 'oc.note': 'ملاحظة', 'oc.notePh': 'تفاصيل اختيارية...',
+    'oc.otherType': 'حدد النوع', 'oc.otherPh': 'مثلاً: إيجار...',
+    'oc.save': 'حفظ المصروف', 'oc.saved': 'تم حفظ المصروف ✓',
+    'oc.needAll': 'أدخل النوع والمبلغ والتاريخ',
+    'oc.empty': 'لا توجد مصاريف مسجلة', 'oc.periodTotal': 'مصاريف الفترة المعروضة',
+    'oc.delConfirm': 'حذف هذا المصروف؟', 'oc.delDenied': 'حذف المصاريف للمدير فقط',
+    'dash.costs': 'إجمالي المصاريف', 'dash.monthCosts': 'مصاريف الشهر', 'dash.net': 'صافي الشهر',
+    'xh.type': 'نوع المصروف', 'xh.amount': 'المبلغ', 'sheet.exp': 'المصاريف',
+    'sum.costs': 'إجمالي المصاريف', 'sum.net': 'الصافي (الإيرادات − المصاريف)',
     'status.online': 'متصل', 'status.offline': 'غير متصل — ستتم المزامنة', 'status.local': 'محلي',
     'role.employee': 'موظف', 'role.admin': 'المدير',
     'logout.title': 'خروج',
@@ -284,10 +304,20 @@ const VAL_LABELS = {
   normal: { en: 'Normal', ar: 'عادي' }, glossy: { en: 'Glossy', ar: 'جلوسي' },
 };
 
+const EXP_LABELS = {
+  repair: { en: 'Repair service', ar: 'صيانة' },
+  internet: { en: 'Internet', ar: 'إنترنت' },
+  electricity: { en: 'Electricity', ar: 'كهرباء' },
+  salaries: { en: 'Salaries', ar: 'مرتبات' },
+  inventory: { en: 'Inventory / Products', ar: 'بضاعة ومشتريات' },
+  other: { en: 'Other', ar: 'أخرى' },
+};
+
 let lang = localStorage.getItem('pz_lang') || 'ar';
 
 function t(key) { return (I18N[lang] && I18N[lang][key]) || I18N.en[key] || key; }
 function svcLabel(k) { return SVC_LABELS[k] ? SVC_LABELS[k][lang] : k; }
+function expLabel(e) { if (e.type === 'other') return e.otherLabel || EXP_LABELS.other[lang]; return EXP_LABELS[e.type] ? EXP_LABELS[e.type][lang] : e.type; }
 function valLabel(k) { if (!k || k === '—') return '—'; return VAL_LABELS[k] ? VAL_LABELS[k][lang] : k; }
 function fmtMoney(n) { return (Math.round(n * 100) / 100).toLocaleString(lang === 'ar' ? 'en-EG' : 'en-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + t('cur'); }
 function fmtDate(d) { try { return new Date(d + 'T00:00:00').toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-GB', { year: 'numeric', month: 'short', day: 'numeric' }); } catch (e) { return d; } }
@@ -301,6 +331,7 @@ function applyI18n() {
   document.querySelectorAll('[data-svc-label]').forEach(el => { el.textContent = svcLabel(el.dataset.svcLabel); });
   document.querySelectorAll('[data-op-label]').forEach(el => { el.textContent = valLabel(el.dataset.opLabel); });
   document.querySelectorAll('[data-val-label]').forEach(el => { el.textContent = valLabel(el.dataset.valLabel); });
+  document.querySelectorAll('[data-exp-label]').forEach(el => { el.textContent = EXP_LABELS[el.dataset.expLabel] ? EXP_LABELS[el.dataset.expLabel][lang] : el.dataset.expLabel; });
   const langBtnTxt = lang === 'ar' ? 'EN' : 'ع';
   $('langToggle').textContent = langBtnTxt;
   $('langToggleLogin').textContent = langBtnTxt;
@@ -313,6 +344,7 @@ function applyI18n() {
     renderInvoice();
     renderHistory();
     renderMachines();
+    renderExpenses();
     if (state.role === 'admin') { renderDashboard(); renderMachSettings(); }
   }
 }
@@ -334,6 +366,9 @@ function toggleTheme() {
 const state = {
   role: null,             // 'employee' | 'admin'
   transactions: [],
+  expenses: [],           // [{id, type, otherLabel, amount, date, note, createdAt, createdBy}]
+  expFilter: 'all',
+  selExpType: null,
   machines: [],           // [{id, name, order, records:[{value,date,at}]}]
   settings: null,         // {empHash, adminHash}
   online: false,          // firebase mode
@@ -370,6 +405,7 @@ function getFbConfig() {
 const LocalStore = {
   async init() {
     state.transactions = JSON.parse(localStorage.getItem('pz_tx') || '[]');
+    state.expenses = JSON.parse(localStorage.getItem('pz_exp') || '[]');
     let mc = JSON.parse(localStorage.getItem('pz_mc') || 'null');
     if (!mc) { mc = DEFAULT_MACHINES; localStorage.setItem('pz_mc', JSON.stringify(mc)); }
     state.machines = mc;
@@ -394,6 +430,17 @@ const LocalStore = {
   async updateTx(id, patch) {
     state.transactions = state.transactions.map(t => t.id === id ? { ...t, ...patch } : t);
     localStorage.setItem('pz_tx', JSON.stringify(state.transactions));
+    refreshAfterData();
+  },
+  async addExp(exp) {
+    exp.id = 'E' + Date.now() + Math.random().toString(36).slice(2, 6);
+    state.expenses.unshift(exp);
+    localStorage.setItem('pz_exp', JSON.stringify(state.expenses));
+    refreshAfterData();
+  },
+  async delExp(id) {
+    state.expenses = state.expenses.filter(e => e.id !== id);
+    localStorage.setItem('pz_exp', JSON.stringify(state.expenses));
     refreshAfterData();
   },
   async saveMachines(machines) {
@@ -445,10 +492,18 @@ const FireStore = {
       state.transactions = snap.docs.map(d => ({ ...d.data(), id: d.id }));
       refreshAfterData();
     });
+
+    // expenses — live, newest first
+    db.collection('expenses').orderBy('createdAt', 'desc').limit(5000).onSnapshot(snap => {
+      state.expenses = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+      refreshAfterData();
+    });
   },
   async addTx(tx) { await db.collection('transactions').add(tx); },
   async delTx(id) { await db.collection('transactions').doc(id).delete(); },
   async updateTx(id, patch) { await db.collection('transactions').doc(id).update(patch); },
+  async addExp(exp) { await db.collection('expenses').add(exp); },
+  async delExp(id) { await db.collection('expenses').doc(id).delete(); },
   async saveMachines(machines) {
     const batch = db.batch();
     const existing = new Set(state.machines.map(m => m.id));
@@ -469,6 +524,7 @@ function refreshAfterData() {
   if (!state.role) return;
   renderHistory();
   renderMachines();
+  renderExpenses();
   if (state.role === 'admin') { renderDashboard(); renderMachSettings(); }
 }
 
@@ -544,6 +600,7 @@ function enterApp(role) {
   $('periodTotalBar').classList.toggle('visible', role === 'admin');
   navigateTo('pageNew');
   $('txDate').value = todayStr();
+  $('expDate').value = todayStr();
   setExportDefaults();
   refreshAfterData();
   updateConnPill();
@@ -573,6 +630,7 @@ document.querySelectorAll('.nav-item').forEach(btn => {
     navigateTo(target);
     if (target === 'pageHistory') renderHistory();
     if (target === 'pageMachines') renderMachines();
+    if (target === 'pageExpenses') { if (!$('expDate').value) $('expDate').value = todayStr(); renderExpenses(); }
     if (target === 'pageDashboard') renderDashboard();
     if (target === 'pageSettings') renderMachSettings();
   });
@@ -1035,6 +1093,115 @@ function renderMachines() {
     });
   });
 }
+/* ==================== OPERATIONAL COSTS ==================== */
+const EXP_ICONS = { repair: 'wrench', internet: 'wifi', electricity: 'zap', salaries: 'users', inventory: 'package', other: 'pencil' };
+
+$('expTypeChips').addEventListener('click', e => {
+  const chip = e.target.closest('.chip'); if (!chip) return;
+  $('expTypeChips').querySelectorAll('.chip').forEach(c => c.classList.remove('sel'));
+  chip.classList.add('sel');
+  state.selExpType = chip.dataset.exp;
+  $('expOtherField').style.display = state.selExpType === 'other' ? '' : 'none';
+  if (state.selExpType === 'other') $('expOtherName').focus();
+  updateExpBtn();
+});
+['expAmount', 'expDate', 'expOtherName'].forEach(id => { $(id).addEventListener('input', updateExpBtn); $(id).addEventListener('change', updateExpBtn); });
+
+function updateExpBtn() {
+  const amt = parseFloat($('expAmount').value) || 0;
+  const otherOk = state.selExpType !== 'other' || $('expOtherName').value.trim();
+  $('btnSaveExp').disabled = !(state.selExpType && amt > 0 && $('expDate').value && otherOk);
+}
+
+$('btnSaveExp').addEventListener('click', async () => {
+  const amt = parseFloat($('expAmount').value) || 0;
+  const date = $('expDate').value;
+  if (!state.selExpType || amt <= 0 || !date) { toast(t('oc.needAll'), true); return; }
+  $('btnSaveExp').disabled = true;
+  const exp = {
+    type: state.selExpType,
+    otherLabel: state.selExpType === 'other' ? $('expOtherName').value.trim() : null,
+    amount: amt,
+    date,
+    note: $('expNote').value.trim(),
+    createdAt: new Date().toISOString(),
+    createdBy: state.role,
+    deviceId: state.deviceId,
+  };
+  try {
+    await store.addExp(exp);
+    toast(t('oc.saved'));
+    state.selExpType = null;
+    $('expTypeChips').querySelectorAll('.chip').forEach(c => c.classList.remove('sel'));
+    $('expOtherField').style.display = 'none';
+    $('expOtherName').value = ''; $('expAmount').value = ''; $('expNote').value = '';
+    $('expDate').value = todayStr();
+    updateExpBtn();
+  } catch (err) {
+    console.error(err);
+    toast((lang === 'ar' ? 'خطأ في الحفظ: ' : 'Save error: ') + err.message, true);
+    $('btnSaveExp').disabled = false;
+  }
+});
+
+$('expFilters').addEventListener('click', e => {
+  const chip = e.target.closest('.filter-chip'); if (!chip) return;
+  document.querySelectorAll('#expFilters .filter-chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  state.expFilter = chip.dataset.filter;
+  renderExpenses();
+});
+
+function getFilteredExpenses() {
+  const now = new Date();
+  return state.expenses.filter(ex => {
+    if (state.expFilter === 'today') return ex.date === todayStr();
+    if (state.expFilter === 'week') return (now - new Date(ex.date + 'T00:00:00')) / 86400000 <= 7;
+    if (state.expFilter === 'month') { const d = new Date(ex.date + 'T00:00:00'); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }
+    return true;
+  });
+}
+
+function renderExpenses() {
+  if (!$('expensesList')) return;
+  const filtered = getFilteredExpenses();
+  $('expTotalVal').textContent = fmtMoney(filtered.reduce((s, ex) => s + (ex.amount || 0), 0));
+  const list = $('expensesList');
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty-big"><div class="empty-icon"><i data-lucide="wallet"></i></div><p>${state.expenses.length ? t('hist.noresults') : t('oc.empty')}</p></div>`;
+    refreshIcons();
+    return;
+  }
+  list.innerHTML = filtered.map(ex => {
+    const byBadge = ex.createdBy ? `<span class="by-badge">${t(ex.createdBy === 'admin' ? 'role.admin' : 'role.employee')}</span>` : '';
+    const delBtn = state.role === 'admin' ? `<button class="btn-delete-transaction" data-id="${ex.id}">${t('hist.delete')}</button>` : '';
+    return `<div class="history-card">
+      <div class="history-card-head">
+        <span class="client"><i data-lucide="${EXP_ICONS[ex.type] || 'pencil'}"></i> ${escapeHtml(expLabel(ex))}${byBadge}</span>
+        <span class="date">${fmtDate(ex.date)}</span>
+      </div>
+      ${ex.note ? `<div class="notes">${escapeHtml(ex.note)}</div>` : ''}
+      <div class="history-card-bottom">
+        <span class="items-count"></span>
+        <span class="total" style="color:var(--orange)">${fmtMoney(ex.amount || 0)}</span>
+      </div>
+      ${delBtn ? `<div class="history-card-actions">${delBtn}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('.btn-delete-transaction').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (state.role !== 'admin') { toast(t('oc.delDenied'), true); return; }
+      askConfirm(t('oc.delConfirm'), t('confirm.delTxSub'), async () => {
+        await store.delExp(btn.dataset.id);
+        toast(t('toast.deleted'));
+        renderExpenses();
+      });
+    });
+  });
+  refreshIcons();
+}
+
 /* ==================== DASHBOARD (admin) ==================== */
 function itemStatKey(it) {
   if (it.type === 'custom') return it.desc;
@@ -1053,6 +1220,16 @@ function renderDashboard() {
   const now = new Date();
   $('dMonthRev').textContent = Math.round(txs.filter(t2 => { const d = new Date((t2.date || '') + 'T00:00:00'); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }).reduce((s, t2) => s + (t2.total || 0), 0)).toLocaleString('en');
   $('dashEng').textContent = txs.reduce((s, t2) => s + (t2.engMeters || 0), 0).toFixed(2) + ' ' + t('eng.m');
+
+  // operational costs
+  const exps = state.expenses;
+  const monthExp = exps.filter(e2 => { const d = new Date((e2.date || '') + 'T00:00:00'); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }).reduce((s, e2) => s + (e2.amount || 0), 0);
+  const monthRev = txs.filter(t2 => { const d = new Date((t2.date || '') + 'T00:00:00'); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }).reduce((s, t2) => s + (t2.total || 0), 0);
+  $('dTotalCosts').textContent = Math.round(exps.reduce((s, e2) => s + (e2.amount || 0), 0)).toLocaleString('en');
+  $('dMonthCosts').textContent = Math.round(monthExp).toLocaleString('en');
+  const net = monthRev - monthExp;
+  $('dMonthNet').textContent = Math.round(net).toLocaleString('en');
+  $('dMonthNet').style.color = net < 0 ? 'var(--orange)' : 'var(--green)';
 
   // top services
   const svcCount = {};
@@ -1123,6 +1300,8 @@ $('btnExportXlsx').addEventListener('click', () => {
 
   const wb = XLSX.utils.book_new();
   if (lang === 'ar') wb.Workbook = { Views: [{ RTL: true }] };
+  const expInRange = state.expenses.filter(ex => (!from || ex.date >= from) && (!to || ex.date <= to))
+    .slice().sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 
   /* Sheet 1: transactions (one row per item) */
   const rows = [];
@@ -1173,6 +1352,8 @@ $('btnExportXlsx').addEventListener('click', () => {
     [t('sum.pieces'), grandPieces],
     [t('sum.clients'), new Set(txs.map(t2 => t2.client)).size],
     [t('sum.eng'), Math.round(txs.reduce((s, t2) => s + (t2.engMeters || 0), 0) * 100) / 100 + ' ' + t('eng.m')],
+    [t('sum.costs'), Math.round(expInRange.reduce((s, e2) => s + (e2.amount || 0), 0) * 100) / 100 + ' ' + t('cur')],
+    [t('sum.net'), Math.round((grandTotal - expInRange.reduce((s, e2) => s + (e2.amount || 0), 0)) * 100) / 100 + ' ' + t('cur')],
     [],
     [t('sum.bySvc')],
     [t('sum.svcCol'), t('sum.qtyCol'), t('sum.revCol')],
@@ -1200,6 +1381,23 @@ $('btnExportXlsx').addEventListener('click', () => {
     const ws3 = XLSX.utils.json_to_sheet(machRows);
     ws3['!cols'] = [{ wch: 20 }, { wch: 11 }, { wch: 12 }, { wch: 10 }];
     XLSX.utils.book_append_sheet(wb, ws3, t('sheet.mach'));
+  }
+
+  /* Sheet 4: operational costs */
+  if (expInRange.length) {
+    const expRows = expInRange.map((ex, i) => ({
+      [t('xh.no')]: i + 1,
+      [t('xh.date')]: ex.date,
+      [t('xh.type')]: expLabel(ex),
+      [t('xh.notes')]: ex.note || '',
+      [t('xh.by')]: ex.createdBy ? t(ex.createdBy === 'admin' ? 'role.admin' : 'role.employee') : '',
+      [t('xh.amount')]: Number(ex.amount),
+    }));
+    expRows.push({});
+    expRows.push({ [t('xh.notes')]: t('xh.grand'), [t('xh.amount')]: Math.round(expInRange.reduce((s, e2) => s + (e2.amount || 0), 0) * 100) / 100 });
+    const ws4 = XLSX.utils.json_to_sheet(expRows);
+    ws4['!cols'] = [{ wch: 5 }, { wch: 11 }, { wch: 20 }, { wch: 26 }, { wch: 10 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, ws4, t('sheet.exp'));
   }
 
   XLSX.writeFile(wb, `PrintZone_${(from || 'all')}_${(to || todayStr())}.xlsx`);
@@ -1241,7 +1439,7 @@ $('btnExportCsv').addEventListener('click', () => {
 });
 
 $('btnBackupJson').addEventListener('click', () => {
-  const data = { version: 1, exportedAt: new Date().toISOString(), transactions: state.transactions, machines: state.machines };
+  const data = { version: 1, exportedAt: new Date().toISOString(), transactions: state.transactions, machines: state.machines, expenses: state.expenses };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -1272,7 +1470,23 @@ $('fileRestoreJson').addEventListener('change', async e => {
     if (Array.isArray(data.machines) && data.machines.length && !state.online) {
       await store.saveMachines(data.machines);
     }
-    toast(t('toast.restoreDone').replace('{n}', newTxs.length));
+    let newExps = [];
+    if (Array.isArray(data.expenses) && data.expenses.length) {
+      const existingExpIds = new Set(state.expenses.map(ex => ex.id));
+      newExps = data.expenses.filter(ex => ex.id && !existingExpIds.has(ex.id));
+      if (state.online && db) {
+        for (let i = 0; i < newExps.length; i += 499) {
+          const batch = db.batch();
+          newExps.slice(i, i + 499).forEach(ex => batch.set(db.collection('expenses').doc(String(ex.id)), ex));
+          await batch.commit();
+        }
+      } else if (newExps.length) {
+        state.expenses = [...newExps, ...state.expenses];
+        localStorage.setItem('pz_exp', JSON.stringify(state.expenses));
+        refreshAfterData();
+      }
+    }
+    toast(t('toast.restoreDone').replace('{n}', newTxs.length + newExps.length));
   } catch { toast(t('toast.restoreErr'), true); }
   e.target.value = '';
 });
@@ -1371,6 +1585,7 @@ function hideLoading(showLoginAfter) {
   applyI18n();
   refreshIcons();
   $('txDate').value = todayStr();
+  $('expDate').value = todayStr();
   $('loadingStatus').textContent = t('loading.connecting');
   try {
     if (getFbConfig()) {
