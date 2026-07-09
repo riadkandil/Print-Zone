@@ -141,6 +141,7 @@ const I18N = {
     'face.section': 'Sides', 'finish.section': 'Finish',
     'eng.title': 'Engineering details', 'eng.length': 'Length (meters)', 'eng.note': 'Note (optional)',
     'eng.notePh': 'e.g. floor plan...', 'eng.m': 'm',
+    'eng.perMeter': 'Price per meter', 'eng.perItem': 'Price per item', 'price.meter': 'Price (per meter)',
     'qty': 'Quantity', 'desc': 'Description', 'descPh': 'Service details',
     'add': '+ Add', 'cancel': 'Cancel',
     'custom.header': 'Unlisted service', 'custom.name': 'Service name', 'custom.ph': 'Type the service',
@@ -231,6 +232,7 @@ const I18N = {
     'face.section': 'الوجوه', 'finish.section': 'الإنهاء',
     'eng.title': 'بيانات الهندسي', 'eng.length': 'الطول (متر)', 'eng.note': 'ملاحظة (اختياري)',
     'eng.notePh': 'مثلاً: مخطط أرضي...', 'eng.m': 'متر',
+    'eng.perMeter': 'سعر المتر', 'eng.perItem': 'سعر القطعة', 'price.meter': 'السعر (للمتر)',
     'qty': 'الكمية', 'desc': 'الوصف', 'descPh': 'تفصيل الخدمة',
     'add': '+ إضافة', 'cancel': 'إلغاء',
     'custom.header': 'خدمة غير مدرجة', 'custom.name': 'اسم الخدمة', 'custom.ph': 'اكتب الخدمة',
@@ -380,6 +382,7 @@ const state = {
   expFilter: 'all',
   selExpType: null,
   selPay: 'cash',
+  engPerMeter: true,
   machines: [],           // [{id, name, order, records:[{value,date,at}]}]
   settings: null,         // {empHash, adminHash}
   online: false,          // firebase mode
@@ -666,7 +669,7 @@ const SIMPLE_TYPES = ['books', 'office', 'pads', 'wrap'];
 
 function updatePriceModeLabels() {
   const txt = state.isFinalPrice ? t('price.total') : t('price.unit');
-  $('subPriceLabel').textContent = txt;
+  $('subPriceLabel').textContent = (!state.isFinalPrice && state.selSvc === 'eng' && state.engPerMeter) ? t('price.meter') : txt;
   $('simplePriceLabel').textContent = txt;
   $('customPriceLabel').textContent = txt;
 }
@@ -712,6 +715,7 @@ $('serviceGrid').addEventListener('click', e => {
     $('subPanel').classList.add('visible');
     $('simplePanel').classList.remove('visible');
     $('engFields').classList.toggle('visible', state.selSvc === 'eng');
+    updatePriceModeLabels();
     $('colorRow').style.display = 'none';
     $('faceRow').style.display = 'none';
     $('finishRow').style.display = 'none';
@@ -781,6 +785,14 @@ $('finishChips').addEventListener('click', e => {
   updateSubBtn();
 });
 
+$('engPriceChips').addEventListener('click', e => {
+  const chip = e.target.closest('.chip'); if (!chip) return;
+  $('engPriceChips').querySelectorAll('.chip').forEach(c => c.classList.remove('sel'));
+  chip.classList.add('sel');
+  state.engPerMeter = chip.dataset.engpm === 'meter';
+  updatePriceModeLabels();
+});
+
 $('subQty').addEventListener('input', updateSubBtn);
 $('subPrice').addEventListener('input', updateSubBtn);
 $('engLength').addEventListener('input', updateSubBtn);
@@ -811,8 +823,10 @@ $('btnAddSub').addEventListener('click', () => {
   state.invoice.push({
     id: Date.now() + Math.random(), svc: state.selSvc, op: state.selOp,
     color: state.selColor || '—', face: state.selFace || '—', finish: state.selFinish || '—',
-    desc: null, qty: q, price: p, total: state.isFinalPrice ? p : q * p,
-    engLength, engNote, type: 'paper', isFinal: state.isFinalPrice
+    desc: null, qty: q, price: p,
+    total: state.isFinalPrice ? p : (state.selSvc === 'eng' && state.engPerMeter ? q * p * (engLength || 0) : q * p),
+    engLength, engNote, engPerMeter: state.selSvc === 'eng' && state.engPerMeter && !state.isFinalPrice,
+    type: 'paper', isFinal: state.isFinalPrice
   });
   renderInvoice();
   toast(t('toast.added'));
@@ -916,7 +930,7 @@ function renderInvoice() {
           <span class="inv-item-total">${it.total.toFixed(2)}</span>
           <button class="btn-del-item" data-id="${it.id}">✕</button>
         </div>
-        ${hasEng ? `<div class="inv-item-eng"><span><i data-lucide="ruler"></i> ${it.engLength} ${t('eng.m')}</span>${it.engNote ? `<span style="color:var(--text-muted)">— ${escapeHtml(it.engNote)}</span>` : ''}</div>` : ''}
+        ${hasEng ? `<div class="inv-item-eng"><span><i data-lucide="ruler"></i> ${it.engLength} ${t('eng.m')}${it.engPerMeter ? ' × ' + it.qty + ' × ' + it.price + '/' + t('eng.m') : ''}</span>${it.engNote ? `<span style="color:var(--text-muted)">— ${escapeHtml(it.engNote)}</span>` : ''}</div>` : ''}
       </div>`;
     }).join('');
   }
