@@ -801,7 +801,8 @@ function updateSubBtn() {
   const q = parseInt($('subQty').value) || 0;
   const p = parseFloat($('subPrice').value) || 0;
   const engOk = state.selSvc !== 'eng' || (parseFloat($('engLength').value) > 0);
-  $('btnAddSub').disabled = !(state.selOp && q > 0 && p > 0 && engOk);
+  const optsOk = !state.selOp || state.selOp === 'scan' || (state.selColor && state.selFace && state.selFinish);
+  $('btnAddSub').disabled = !(state.selOp && q > 0 && p > 0 && engOk && optsOk);
 }
 
 function resetSubPanel() {
