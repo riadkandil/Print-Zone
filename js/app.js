@@ -28,7 +28,7 @@ const FIREBASE_CONFIG = {
 
 /* Default passwords (hashes are created on first run; change them from
    Admin → Settings). Employee: 1234 — Admin: mkmass45 */
-const APP_VERSION = 'v1.10';
+const APP_VERSION = 'v1.11';
 const DEFAULT_EMP_PW = '1234';
 const DEFAULT_ADMIN_PW = 'mkmass45';
 
@@ -358,7 +358,7 @@ function expLabel(e) { if (e.type === 'other') return e.otherLabel || EXP_LABELS
 function payLabel(tx) { if (!tx.payMethod) return ''; if (tx.payMethod === 'other') return tx.payOther || PAY_LABELS.other[lang]; return PAY_LABELS[tx.payMethod] ? PAY_LABELS[tx.payMethod][lang] : tx.payMethod; }
 function valLabel(k) { if (!k || k === '—') return '—'; return VAL_LABELS[k] ? VAL_LABELS[k][lang] : k; }
 function fmtMoney(n) { return (Math.round(n * 100) / 100).toLocaleString(lang === 'ar' ? 'en-EG' : 'en-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + t('cur'); }
-function fmtTime(iso) { try { return new Date(iso).toLocaleTimeString(lang === 'ar' ? 'ar-EG' : 'en-GB', { hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
+function fmtTime(iso) { try { return new Date(iso).toLocaleTimeString(lang === 'ar' ? 'ar-EG' : 'en-US', { hour: 'numeric', minute: '2-digit', hour12: true }); } catch (e) { return ''; } }
 function fmtDate(d) { try { return new Date(d + 'T00:00:00').toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-GB', { year: 'numeric', month: 'short', day: 'numeric' }); } catch (e) { return d; } }
 
 function applyI18n() {
