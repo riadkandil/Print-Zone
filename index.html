@@ -56,7 +56,7 @@
       <button class="btn-login" id="btnLogin" data-i18n="login.enter"></button>
     </div>
     <div class="login-mode-note" id="loginModeNote"></div>
-    <div class="login-ver">v1.3</div>
+    <div class="login-ver">v1.4</div>
   </div>
 </div>
 
@@ -329,10 +329,26 @@
     <div class="dash-stat"><div class="ds-icon"><i data-lucide="wallet"></i></div><div class="ds-label" data-i18n="dash.costs"></div><div class="ds-value" id="dTotalCosts" style="color:var(--orange)">0</div></div>
     <div class="dash-stat"><div class="ds-icon"><i data-lucide="trending-down"></i></div><div class="ds-label" data-i18n="dash.monthCosts"></div><div class="ds-value" id="dMonthCosts" style="color:var(--orange)">0</div></div>
     <div class="dash-stat"><div class="ds-icon"><i data-lucide="coins"></i></div><div class="ds-label" data-i18n="dash.net"></div><div class="ds-value" id="dMonthNet">0</div></div>
+    <div class="dash-stat"><div class="ds-icon"><i data-lucide="activity"></i></div><div class="ds-label" data-i18n="dash.avgTx"></div><div class="ds-value" id="dAvgTx">0</div></div>
+    <div class="dash-stat"><div class="ds-icon"><i data-lucide="check-circle"></i></div><div class="ds-label" data-i18n="dash.collected"></div><div class="ds-value" id="dCollected" style="color:var(--green)">0</div></div>
+    <div class="dash-stat"><div class="ds-icon"><i data-lucide="clock"></i></div><div class="ds-label" data-i18n="dash.outstanding"></div><div class="ds-value" id="dOutstanding" style="color:var(--red)">0</div></div>
   </div>
+  <div class="dash-section">
+    <h3><i data-lucide="calendar"></i> <span data-i18n="dash.dayReport"></span></h3>
+    <div class="pw-row" style="margin-bottom:10px"><div class="field" style="max-width:220px"><label data-i18n="dash.pickDay"></label><input type="date" id="dashDay"></div></div>
+    <div class="dash-stats" id="dayStats" style="margin-bottom:12px"></div>
+    <div class="section-label" style="margin:6px 0"><span class="dot"></span> <span data-i18n="dash.dayByPay"></span></div>
+    <div id="dashDayPay"></div>
+  </div>
+  <div class="dash-section"><h3><i data-lucide="credit-card"></i> <span data-i18n="dash.byPayMonth"></span></h3><div id="dashPayMonth"></div></div>
+  <div class="dash-section"><h3><i data-lucide="credit-card"></i> <span data-i18n="dash.byPayAll"></span></h3><div id="dashPayAll"></div></div>
   <div class="dash-section"><h3><i data-lucide="trending-up"></i> <span data-i18n="dash.topSvc"></span></h3><div id="dashServices"></div></div>
   <div class="dash-section"><h3><i data-lucide="package"></i> <span data-i18n="dash.topPaper"></span></h3><div id="dashPapers"></div></div>
   <div class="dash-section"><h3><i data-lucide="calendar-days"></i> <span data-i18n="dash.last7"></span></h3><div id="dashLast7"></div></div>
+  <div class="dash-section"><h3><i data-lucide="users"></i> <span data-i18n="dash.topClients"></span></h3><div id="dashClients"></div></div>
+  <div class="dash-section"><h3><i data-lucide="calendar-days"></i> <span data-i18n="dash.byMonth"></span></h3><div id="dashByMonth"></div></div>
+  <div class="dash-section"><h3><i data-lucide="wallet"></i> <span data-i18n="dash.costsByType"></span></h3><div id="dashCostTypes"></div></div>
+  <div class="dash-section"><h3><i data-lucide="user-check"></i> <span data-i18n="dash.byRole"></span></h3><div id="dashByRole"></div></div>
   <div class="dash-section">
     <h3><i data-lucide="ruler"></i> <span data-i18n="dash.eng"></span></h3>
     <div id="dashEng" style="font-size:1.5rem;font-weight:900;color:var(--teal);text-align:center;padding:8px">0.00</div>
@@ -426,6 +442,6 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/app.js?v=3"></script>
+<script src="js/app.js?v=4"></script>
 </body>
 </html>

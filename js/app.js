@@ -126,6 +126,12 @@ const I18N = {
     'oc.empty': 'No costs recorded yet', 'oc.periodTotal': 'Costs for shown period',
     'oc.delConfirm': 'Delete this cost?', 'oc.delDenied': 'Only the admin can delete costs',
     'dash.costs': 'Total costs', 'dash.monthCosts': 'Costs this month', 'dash.net': 'Net this month',
+    'dash.avgTx': 'Avg. transaction', 'dash.collected': 'Collected revenue', 'dash.outstanding': 'Outstanding',
+    'dash.dayReport': 'Day report', 'dash.pickDay': 'Day', 'dash.dayCosts': 'Costs', 'dash.dayNet': 'Net', 'dash.dayUnpaid': 'Unpaid',
+    'dash.dayByPay': 'Day revenue by payment method',
+    'dash.byPayMonth': 'This month by payment method', 'dash.byPayAll': 'All time by payment method',
+    'dash.topClients': 'Top clients', 'dash.byMonth': 'Revenue by month (last 6)',
+    'dash.costsByType': 'Costs by type', 'dash.byRole': 'Revenue by recorder',
     'xh.type': 'Cost type', 'xh.amount': 'Amount', 'sheet.exp': 'Expenses',
     'sum.costs': 'Total costs', 'sum.net': 'Net (revenue − costs)',
     'status.online': 'Online', 'status.offline': 'Offline — will sync', 'status.local': 'Local',
@@ -224,6 +230,12 @@ const I18N = {
     'oc.empty': 'لا توجد مصاريف مسجلة', 'oc.periodTotal': 'مصاريف الفترة المعروضة',
     'oc.delConfirm': 'حذف هذا المصروف؟', 'oc.delDenied': 'حذف المصاريف للمدير فقط',
     'dash.costs': 'إجمالي المصاريف', 'dash.monthCosts': 'مصاريف الشهر', 'dash.net': 'صافي الشهر',
+    'dash.avgTx': 'متوسط المعاملة', 'dash.collected': 'إيرادات محصلة', 'dash.outstanding': 'مستحقات',
+    'dash.dayReport': 'تقرير اليوم', 'dash.pickDay': 'اليوم', 'dash.dayCosts': 'مصاريف', 'dash.dayNet': 'الصافي', 'dash.dayUnpaid': 'غير مدفوع',
+    'dash.dayByPay': 'إيرادات اليوم حسب طريقة الدفع',
+    'dash.byPayMonth': 'هذا الشهر حسب طريقة الدفع', 'dash.byPayAll': 'الإجمالي حسب طريقة الدفع',
+    'dash.topClients': 'أكبر العملاء', 'dash.byMonth': 'الإيرادات الشهرية (آخر 6)',
+    'dash.costsByType': 'المصاريف حسب النوع', 'dash.byRole': 'الإيرادات حسب المسجل',
     'xh.type': 'نوع المصروف', 'xh.amount': 'المبلغ', 'sheet.exp': 'المصاريف',
     'sum.costs': 'إجمالي المصاريف', 'sum.net': 'الصافي (الإيرادات − المصاريف)',
     'status.online': 'متصل', 'status.offline': 'غير متصل — ستتم المزامنة', 'status.local': 'محلي',
@@ -1446,7 +1458,81 @@ function renderDashboard() {
     return `<div class="bar-row"><span class="bar-label">${label}</span>
       <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:var(--teal)">${Math.round(v).toLocaleString('en')}</div></div></div>`;
   }).join('');
+
+  // avg / collected / outstanding
+  const unpaidTotal = txs.filter(t2 => t2.payMethod === 'notpaid').reduce((s, t2) => s + (t2.total || 0), 0);
+  const grandRev = txs.reduce((s, t2) => s + (t2.total || 0), 0);
+  $('dAvgTx').textContent = txs.length ? Math.round(grandRev / txs.length).toLocaleString('en') : '0';
+  $('dCollected').textContent = Math.round(grandRev - unpaidTotal).toLocaleString('en');
+  $('dOutstanding').textContent = Math.round(unpaidTotal).toLocaleString('en');
+
+  // revenue by payment method
+  const PAY_COLORS = ['var(--green)', 'var(--primary)', 'var(--teal)', 'var(--orange)', 'var(--red)'];
+  const payAgg = list => {
+    const o = {};
+    list.forEach(t2 => { const k = payLabel(t2) || PAY_LABELS.cash[lang]; o[k] = (o[k] || 0) + (t2.total || 0); });
+    Object.keys(o).forEach(k => { o[k] = Math.round(o[k]); });
+    return o;
+  };
+  const inThisMonth = t2 => { const d = new Date((t2.date || '') + 'T00:00:00'); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); };
+  renderBars('dashPayMonth', payAgg(txs.filter(inThisMonth)), PAY_COLORS);
+  renderBars('dashPayAll', payAgg(txs), PAY_COLORS);
+
+  // top clients
+  const clientAgg = {};
+  txs.forEach(t2 => { const c = t2.client || '—'; clientAgg[c] = (clientAgg[c] || 0) + (t2.total || 0); });
+  Object.keys(clientAgg).forEach(k => { clientAgg[k] = Math.round(clientAgg[k]); });
+  renderBars('dashClients', clientAgg, ['var(--primary)', 'var(--teal)', 'var(--green)', 'var(--orange)']);
+
+  // revenue by month (last 6, chronological)
+  const months = {};
+  for (let i = 5; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); months[d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')] = 0; }
+  txs.forEach(t2 => { const k = (t2.date || '').slice(0, 7); if (k in months) months[k] += (t2.total || 0); });
+  const mEntries = Object.entries(months);
+  const mMax = Math.max(...mEntries.map(e => e[1]), 1);
+  $('dashByMonth').innerHTML = mEntries.map(([m, v]) => {
+    const pct = Math.max((v / mMax * 100), 2).toFixed(0);
+    const label = new Date(m + '-01T00:00:00').toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-GB', { month: 'short', year: '2-digit' });
+    return `<div class="bar-row"><span class="bar-label">${label}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:var(--primary)">${Math.round(v).toLocaleString('en')}</div></div></div>`;
+  }).join('');
+
+  // costs by type
+  const costAgg = {};
+  exps.forEach(e2 => { const k = expLabel(e2); costAgg[k] = (costAgg[k] || 0) + (e2.amount || 0); });
+  Object.keys(costAgg).forEach(k => { costAgg[k] = Math.round(costAgg[k]); });
+  renderBars('dashCostTypes', costAgg, ['var(--orange)', 'var(--red)', 'var(--teal)']);
+
+  // revenue by recorder
+  const roleAgg = {};
+  txs.forEach(t2 => { const k = t(t2.createdBy === 'admin' ? 'role.admin' : 'role.employee'); roleAgg[k] = (roleAgg[k] || 0) + (t2.total || 0); });
+  Object.keys(roleAgg).forEach(k => { roleAgg[k] = Math.round(roleAgg[k]); });
+  renderBars('dashByRole', roleAgg, ['var(--teal)', 'var(--primary)']);
+
+  renderDayReport();
 }
+
+function renderDayReport() {
+  if (state.role !== 'admin' || !$('dashDay')) return;
+  if (!$('dashDay').value) $('dashDay').value = todayStr();
+  const day = $('dashDay').value;
+  const txs = state.transactions.filter(t2 => t2.date === day && !t2.mistake);
+  const exps = state.expenses.filter(e2 => e2.date === day);
+  const rev = txs.reduce((s, t2) => s + (t2.total || 0), 0);
+  const unpaid = txs.filter(t2 => t2.payMethod === 'notpaid').reduce((s, t2) => s + (t2.total || 0), 0);
+  const costs = exps.reduce((s, e2) => s + (e2.amount || 0), 0);
+  const net = rev - costs;
+  $('dayStats').innerHTML = `
+    <div class="dash-stat"><div class="ds-label">${t('dash.rev')}</div><div class="ds-value">${Math.round(rev).toLocaleString('en')}</div></div>
+    <div class="dash-stat"><div class="ds-label">${t('dash.tx')}</div><div class="ds-value">${txs.length.toLocaleString('en')}</div></div>
+    <div class="dash-stat"><div class="ds-label">${t('dash.dayCosts')}</div><div class="ds-value" style="color:var(--orange)">${Math.round(costs).toLocaleString('en')}</div></div>
+    <div class="dash-stat"><div class="ds-label">${t('dash.dayNet')}</div><div class="ds-value" style="color:${net < 0 ? 'var(--red)' : 'var(--green)'}">${Math.round(net).toLocaleString('en')}</div></div>
+    <div class="dash-stat"><div class="ds-label">${t('dash.dayUnpaid')}</div><div class="ds-value" style="color:var(--red)">${Math.round(unpaid).toLocaleString('en')}</div></div>`;
+  const agg = {};
+  txs.forEach(t2 => { const k = payLabel(t2) || PAY_LABELS.cash[lang]; agg[k] = (agg[k] || 0) + (t2.total || 0); });
+  Object.keys(agg).forEach(k => { agg[k] = Math.round(agg[k]); });
+  renderBars('dashDayPay', agg, ['var(--green)', 'var(--primary)', 'var(--teal)', 'var(--orange)', 'var(--red)']);
+}
+$('dashDay').addEventListener('change', renderDayReport);
 function renderBars(elId, counts, colors) {
   const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6);
   const max = sorted.length ? sorted[0][1] : 1;
