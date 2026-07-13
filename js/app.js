@@ -129,9 +129,8 @@ const I18N = {
     'dash.avgTx': 'Avg. transaction', 'dash.collected': 'Collected revenue', 'dash.outstanding': 'Outstanding',
     'dash.dayReport': 'Day report', 'dash.pickDay': 'Day', 'dash.dayCosts': 'Costs', 'dash.dayNet': 'Net', 'dash.dayUnpaid': 'Unpaid',
     'dash.dayByPay': 'Day revenue by payment method',
-    'dash.byPayMonth': 'This month by payment method', 'dash.byPayAll': 'All time by payment method',
-    'dash.topClients': 'Top clients', 'dash.byMonth': 'Revenue by month (last 6)',
-    'dash.costsByType': 'Costs by type', 'dash.byRole': 'Revenue by recorder',
+    'dash.byPayMonth': 'This month by payment method', 'dash.byMonth': 'Revenue by month (last 6)',
+    'dash.costsByType': 'Costs by type',
     'xh.type': 'Cost type', 'xh.amount': 'Amount', 'sheet.exp': 'Expenses',
     'sum.costs': 'Total costs', 'sum.net': 'Net (revenue − costs)',
     'status.online': 'Online', 'status.offline': 'Offline — will sync', 'status.local': 'Local',
@@ -233,9 +232,8 @@ const I18N = {
     'dash.avgTx': 'متوسط المعاملة', 'dash.collected': 'إيرادات محصلة', 'dash.outstanding': 'مستحقات',
     'dash.dayReport': 'تقرير اليوم', 'dash.pickDay': 'اليوم', 'dash.dayCosts': 'مصاريف', 'dash.dayNet': 'الصافي', 'dash.dayUnpaid': 'غير مدفوع',
     'dash.dayByPay': 'إيرادات اليوم حسب طريقة الدفع',
-    'dash.byPayMonth': 'هذا الشهر حسب طريقة الدفع', 'dash.byPayAll': 'الإجمالي حسب طريقة الدفع',
-    'dash.topClients': 'أكبر العملاء', 'dash.byMonth': 'الإيرادات الشهرية (آخر 6)',
-    'dash.costsByType': 'المصاريف حسب النوع', 'dash.byRole': 'الإيرادات حسب المسجل',
+    'dash.byPayMonth': 'هذا الشهر حسب طريقة الدفع', 'dash.byMonth': 'الإيرادات الشهرية (آخر 6)',
+    'dash.costsByType': 'المصاريف حسب النوع',
     'xh.type': 'نوع المصروف', 'xh.amount': 'المبلغ', 'sheet.exp': 'المصاريف',
     'sum.costs': 'إجمالي المصاريف', 'sum.net': 'الصافي (الإيرادات − المصاريف)',
     'status.online': 'متصل', 'status.offline': 'غير متصل — ستتم المزامنة', 'status.local': 'محلي',
@@ -1476,13 +1474,6 @@ function renderDashboard() {
   };
   const inThisMonth = t2 => { const d = new Date((t2.date || '') + 'T00:00:00'); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); };
   renderBars('dashPayMonth', payAgg(txs.filter(inThisMonth)), PAY_COLORS);
-  renderBars('dashPayAll', payAgg(txs), PAY_COLORS);
-
-  // top clients
-  const clientAgg = {};
-  txs.forEach(t2 => { const c = t2.client || '—'; clientAgg[c] = (clientAgg[c] || 0) + (t2.total || 0); });
-  Object.keys(clientAgg).forEach(k => { clientAgg[k] = Math.round(clientAgg[k]); });
-  renderBars('dashClients', clientAgg, ['var(--primary)', 'var(--teal)', 'var(--green)', 'var(--orange)']);
 
   // revenue by month (last 6, chronological)
   const months = {};
@@ -1501,12 +1492,6 @@ function renderDashboard() {
   exps.forEach(e2 => { const k = expLabel(e2); costAgg[k] = (costAgg[k] || 0) + (e2.amount || 0); });
   Object.keys(costAgg).forEach(k => { costAgg[k] = Math.round(costAgg[k]); });
   renderBars('dashCostTypes', costAgg, ['var(--orange)', 'var(--red)', 'var(--teal)']);
-
-  // revenue by recorder
-  const roleAgg = {};
-  txs.forEach(t2 => { const k = t(t2.createdBy === 'admin' ? 'role.admin' : 'role.employee'); roleAgg[k] = (roleAgg[k] || 0) + (t2.total || 0); });
-  Object.keys(roleAgg).forEach(k => { roleAgg[k] = Math.round(roleAgg[k]); });
-  renderBars('dashByRole', roleAgg, ['var(--teal)', 'var(--primary)']);
 
   renderDayReport();
 }
