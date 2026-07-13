@@ -28,6 +28,7 @@ const FIREBASE_CONFIG = {
 
 /* Default passwords (hashes are created on first run; change them from
    Admin → Settings). Employee: 1234 — Admin: mkmass45 */
+const APP_VERSION = 'v1.6';
 const DEFAULT_EMP_PW = '1234';
 const DEFAULT_ADMIN_PW = 'mkmass45';
 
@@ -1842,6 +1843,8 @@ function hideLoading(showLoginAfter) {
   refreshIcons();
   $('txDate').value = todayStr();
   $('expDate').value = todayStr();
+  $('loginVer').textContent = APP_VERSION;
+  $('appVer').textContent = APP_VERSION;
   $('loadingStatus').textContent = t('loading.connecting');
   try {
     if (getFbConfig()) {

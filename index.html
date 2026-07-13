@@ -11,7 +11,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<link rel="stylesheet" href="css/styles.css?v=3">
+<link rel="stylesheet" href="css/styles.css?v=4">
 </head>
 <body>
 
@@ -56,7 +56,7 @@
       <button class="btn-login" id="btnLogin" data-i18n="login.enter"></button>
     </div>
     <div class="login-mode-note" id="loginModeNote"></div>
-    <div class="login-ver">v1.5</div>
+    <div class="login-ver" id="loginVer"></div>
   </div>
 </div>
 
@@ -412,6 +412,8 @@
 
 </div><!-- /main-content -->
 
+<div class="app-footer"><span id="appVer"></span></div>
+
 <!-- NAV -->
 <div class="nav-bar" id="navBar">
   <button class="nav-item active" data-page="pageNew"><span class="nav-icon"><i data-lucide="plus"></i></span><span class="nav-label" data-i18n="nav.new"></span></button>
@@ -439,6 +441,6 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="js/app.js?v=5"></script>
+<script src="js/app.js?v=6"></script>
 </body>
 </html>

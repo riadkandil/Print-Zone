@@ -376,3 +376,5 @@ html.dark .icon-btn .icon-light{display:none}
 #payChips .chip[data-pay="notpaid"]{color:var(--red)}
 #payChips .chip[data-pay="notpaid"].sel{border-color:var(--red);background:var(--red-50);color:var(--red);box-shadow:0 0 0 3px var(--red-light)}
 .mini-field select{width:100%;border:1.5px solid var(--border);border-radius:8px;background:var(--surface-2);color:inherit;padding:8px 10px;font-family:inherit;font-size:.85rem;font-weight:700}
+
+.app-footer{padding:6px 14px calc(var(--nav-h) + 28px);text-align:left;font-size:.68rem;font-weight:700;color:var(--text-muted);opacity:.75}
