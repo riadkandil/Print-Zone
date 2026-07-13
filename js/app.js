@@ -28,7 +28,7 @@ const FIREBASE_CONFIG = {
 
 /* Default passwords (hashes are created on first run; change them from
    Admin → Settings). Employee: 1234 — Admin: mkmass45 */
-const APP_VERSION = 'v1.7';
+const APP_VERSION = 'v1.8';
 const DEFAULT_EMP_PW = '1234';
 const DEFAULT_ADMIN_PW = 'mkmass45';
 
@@ -325,6 +325,7 @@ const SVC_LABELS = {
   office: { en: 'Office Supplies', ar: 'أدوات مكتبية' },
   pads: { en: 'Pads', ar: 'تكعيب' },
   wrap: { en: 'Lamination', ar: 'تغليف' },
+  upload: { en: 'Electronic Upload', ar: 'رفع الكتروني' },
 };
 const VAL_LABELS = {
   print: { en: 'Print', ar: 'طباعة' }, scan: { en: 'Scan', ar: 'سكان' }, copy: { en: 'Photocopy', ar: 'تصوير' },
@@ -708,7 +709,7 @@ $('confirmNo').addEventListener('click', () => { $('confirmOverlay').classList.r
 $('confirmOverlay').addEventListener('click', e => { if (e.target === $('confirmOverlay')) { $('confirmOverlay').classList.remove('visible'); confirmCb = null; } });
 /* ==================== PRICE MODE ==================== */
 const PAPER_TYPES = ['A4', 'A3', 'A5', 'eng'];
-const SIMPLE_TYPES = ['books', 'office', 'pads', 'wrap'];
+const SIMPLE_TYPES = ['books', 'office', 'pads', 'wrap', 'upload'];
 
 function updatePriceModeLabels() {
   const txt = state.isFinalPrice ? t('price.total') : t('price.unit');
