@@ -28,7 +28,7 @@ const FIREBASE_CONFIG = {
 
 /* Default passwords (hashes are created on first run; change them from
    Admin → Settings). Employee: 1234 — Admin: mkmass45 */
-const APP_VERSION = 'v1.8';
+const APP_VERSION = 'v1.9';
 const DEFAULT_EMP_PW = '1234';
 const DEFAULT_ADMIN_PW = 'mkmass45';
 
@@ -648,8 +648,7 @@ $('loginPw').addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(
 
 function enterApp(role) {
   state.role = role;
-  if (role === 'employee') localStorage.setItem('pz_session', 'employee');
-  else sessionStorage.setItem('pz_session_admin', '1');
+  sessionStorage.setItem('pz_session', role);
   $('loginView').style.display = 'none';
   $('appView').classList.add('active');
   $('rolePill').textContent = t(role === 'admin' ? 'role.admin' : 'role.employee');
@@ -665,8 +664,9 @@ function enterApp(role) {
 }
 
 function logout() {
-  localStorage.removeItem('pz_session');
+  sessionStorage.removeItem('pz_session');
   sessionStorage.removeItem('pz_session_admin');
+  localStorage.removeItem('pz_session');
   location.reload();
 }
 $('btnLogout').addEventListener('click', logout);
@@ -1870,8 +1870,9 @@ function hideLoading(showLoginAfter) {
   if (elapsed < 600) await new Promise(r => setTimeout(r, 600 - elapsed));
   // restore session
   let restored = false;
-  if (sessionStorage.getItem('pz_session_admin') === '1') { enterApp('admin'); restored = true; }
-  else if (localStorage.getItem('pz_session') === 'employee') { enterApp('employee'); restored = true; }
+  localStorage.removeItem('pz_session'); // legacy persistent sessions: force logout
+  const sess = sessionStorage.getItem('pz_session') || (sessionStorage.getItem('pz_session_admin') === '1' ? 'admin' : null);
+  if (sess === 'admin' || sess === 'employee') { enterApp(sess); restored = true; }
   hideLoading(!restored);
   refreshIcons();
 })();
