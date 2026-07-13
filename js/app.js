@@ -28,7 +28,7 @@ const FIREBASE_CONFIG = {
 
 /* Default passwords (hashes are created on first run; change them from
    Admin → Settings). Employee: 1234 — Admin: mkmass45 */
-const APP_VERSION = 'v1.9';
+const APP_VERSION = 'v1.10';
 const DEFAULT_EMP_PW = '1234';
 const DEFAULT_ADMIN_PW = 'mkmass45';
 
@@ -199,7 +199,7 @@ const I18N = {
     'err.rules': 'Firebase refused the connection: the security rules block access. In Firestore → Rules tab → paste the rules from the setup guide → Publish, then reload.',
     'err.notfound': 'The Firestore database does not exist yet. In the Firebase console: Build → Firestore Database → Create database, then reload.',
     'err.generic': 'Connection error',
-    'xh.no': '#', 'xh.date': 'Date', 'xh.client': 'Client', 'xh.by': 'Recorded by', 'xh.notes': 'Notes',
+    'xh.no': '#', 'xh.date': 'Date', 'xh.time': 'Time', 'xh.client': 'Client', 'xh.by': 'Recorded by', 'xh.notes': 'Notes',
     'xh.svc': 'Service', 'xh.detail': 'Detail', 'xh.color': 'Color', 'xh.sides': 'Sides',
     'xh.finish': 'Finish', 'xh.engLen': 'Eng. length (m)', 'xh.engNote': 'Eng. note',
     'xh.qty': 'Qty', 'xh.price': 'Unit price', 'xh.final': 'Final price?', 'xh.total': 'Total',
@@ -302,7 +302,7 @@ const I18N = {
     'err.rules': 'رفض Firebase الاتصال: قواعد الأمان تمنع الوصول. من Firestore ← تبويب Rules ← الصق القواعد من دليل الإعداد ← Publish، ثم أعد التحميل.',
     'err.notfound': 'قاعدة بيانات Firestore غير منشأة بعد. من لوحة Firebase: Build ← Firestore Database ← Create database، ثم أعد التحميل.',
     'err.generic': 'خطأ في الاتصال',
-    'xh.no': 'رقم', 'xh.date': 'التاريخ', 'xh.client': 'العميل', 'xh.by': 'سجّلها', 'xh.notes': 'الملاحظات',
+    'xh.no': 'رقم', 'xh.date': 'التاريخ', 'xh.time': 'الوقت', 'xh.client': 'العميل', 'xh.by': 'سجّلها', 'xh.notes': 'الملاحظات',
     'xh.svc': 'الخدمة', 'xh.detail': 'التفصيل', 'xh.color': 'اللون', 'xh.sides': 'الأوجه',
     'xh.finish': 'الإنهاء', 'xh.engLen': 'طول هندسي (متر)', 'xh.engNote': 'ملاحظة هندسية',
     'xh.qty': 'الكمية', 'xh.price': 'سعر الوحدة', 'xh.final': 'سعر نهائي؟', 'xh.total': 'الإجمالي',
@@ -358,6 +358,7 @@ function expLabel(e) { if (e.type === 'other') return e.otherLabel || EXP_LABELS
 function payLabel(tx) { if (!tx.payMethod) return ''; if (tx.payMethod === 'other') return tx.payOther || PAY_LABELS.other[lang]; return PAY_LABELS[tx.payMethod] ? PAY_LABELS[tx.payMethod][lang] : tx.payMethod; }
 function valLabel(k) { if (!k || k === '—') return '—'; return VAL_LABELS[k] ? VAL_LABELS[k][lang] : k; }
 function fmtMoney(n) { return (Math.round(n * 100) / 100).toLocaleString(lang === 'ar' ? 'en-EG' : 'en-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + t('cur'); }
+function fmtTime(iso) { try { return new Date(iso).toLocaleTimeString(lang === 'ar' ? 'ar-EG' : 'en-GB', { hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
 function fmtDate(d) { try { return new Date(d + 'T00:00:00').toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-GB', { year: 'numeric', month: 'short', day: 'numeric' }); } catch (e) { return d; } }
 
 function applyI18n() {
@@ -1147,7 +1148,7 @@ function renderHistory() {
     return `<div class="history-card${tx.mistake ? ' mistaken' : ''}">
       <div class="history-card-head">
         <span class="client">${escapeHtml(tx.client)}${byBadge}${unpaidBadge}${mistakeBadge}</span>
-        <span class="date">${fmtDate(tx.date)}</span>
+        <span class="date">${fmtDate(tx.date)}${tx.createdAt ? ' · ' + fmtTime(tx.createdAt) : ''}</span>
       </div>
       ${tx.notes ? `<div class="notes">${escapeHtml(tx.notes)}</div>` : ''}
       <div class="history-card-tags">${tx.payMethod ? `<span class="tag ${tx.payMethod === 'notpaid' ? 'tag-notpaid' : 'tag-finish'}">${escapeHtml(payLabel(tx))}</span>` : ''}${tagSet}</div>
@@ -1566,6 +1567,7 @@ $('btnExportXlsx').addEventListener('click', () => {
       rows.push({
         [t('xh.no')]: ti + 1,
         [t('xh.date')]: tx.date,
+        [t('xh.time')]: tx.createdAt ? fmtTime(tx.createdAt) : '',
         [t('xh.client')]: tx.client,
         [t('xh.by')]: tx.createdBy ? t(tx.createdBy === 'admin' ? 'role.admin' : 'role.employee') : '',
         [t('xh.pay')]: tx.payMethod ? payLabel(tx) : '',
@@ -1589,7 +1591,7 @@ $('btnExportXlsx').addEventListener('click', () => {
   rows.push({});
   rows.push({ [t('xh.notes')]: t('xh.grand'), [t('xh.qty')]: grandPieces, [t('xh.total')]: Math.round(grandTotal * 100) / 100 });
   const ws1 = XLSX.utils.json_to_sheet(rows);
-  ws1['!cols'] = [{ wch: 5 }, { wch: 11 }, { wch: 18 }, { wch: 10 }, { wch: 12 }, { wch: 22 }, { wch: 14 }, { wch: 14 }, { wch: 9 }, { wch: 11 }, { wch: 9 }, { wch: 13 }, { wch: 16 }, { wch: 8 }, { wch: 10 }, { wch: 10 }, { wch: 12 }];
+  ws1['!cols'] = [{ wch: 5 }, { wch: 11 }, { wch: 8 }, { wch: 18 }, { wch: 10 }, { wch: 12 }, { wch: 22 }, { wch: 14 }, { wch: 14 }, { wch: 9 }, { wch: 11 }, { wch: 9 }, { wch: 13 }, { wch: 16 }, { wch: 8 }, { wch: 10 }, { wch: 10 }, { wch: 12 }];
   XLSX.utils.book_append_sheet(wb, ws1, t('sheet.tx'));
 
   /* Sheet 2: summary */
@@ -1669,12 +1671,12 @@ $('btnExportCsv').addEventListener('click', () => {
   if (!txs.length) { toast(t('toast.expNone'), true); return; }
 
   const esc = v => { const s = String(v == null ? '' : v); return s.includes(',') || s.includes('"') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s; };
-  const headers = [t('xh.no'),t('xh.date'),t('xh.client'),t('xh.by'),t('xh.pay'),t('xh.notes'),t('xh.svc'),t('xh.detail'),t('xh.color'),t('xh.sides'),t('xh.finish'),t('xh.engLen'),t('xh.engNote'),t('xh.qty'),t('xh.price'),t('xh.final'),t('xh.total')];
+  const headers = [t('xh.no'),t('xh.date'),t('xh.time'),t('xh.client'),t('xh.by'),t('xh.pay'),t('xh.notes'),t('xh.svc'),t('xh.detail'),t('xh.color'),t('xh.sides'),t('xh.finish'),t('xh.engLen'),t('xh.engNote'),t('xh.qty'),t('xh.price'),t('xh.final'),t('xh.total')];
   const rows = [headers.map(esc).join(',')];
   txs.forEach((tx, ti) => {
     (tx.items || []).forEach(it => {
       rows.push([
-        ti+1, tx.date, tx.client,
+        ti+1, tx.date, tx.createdAt ? fmtTime(tx.createdAt) : '', tx.client,
         tx.createdBy ? t(tx.createdBy === 'admin' ? 'role.admin' : 'role.employee') : '',
         tx.payMethod ? payLabel(tx) : '',
         tx.notes || '',
