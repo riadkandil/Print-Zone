@@ -135,6 +135,13 @@ const I18N = {
     'newtx.date': 'Date *', 'newtx.notes': 'Extra notes', 'newtx.notesPh': 'Any extra details...',
     'newtx.defaultClient': 'Client',
     'pay.section': 'Payment method', 'pay.specify': 'Specify method', 'pay.otherPh': 'e.g. Bank transfer...', 'xh.pay': 'Payment',
+    'hist.edit': 'Edit', 'save.update': 'Update Transaction', 'toast.updated': 'Transaction updated ✓',
+    'edit.banner': 'Editing transaction — press Update to save',
+    'desc.choose': '— Choose —', 'desc.addNew': '+ Add new product/service',
+    'nav.unpaid': 'Unpaid', 'unpaid.title': 'Accounts Receivable', 'unpaid.empty': 'No unpaid transactions',
+    'unpaid.total': 'Total outstanding', 'unpaid.markPaid': 'Mark paid', 'unpaid.confirm': 'Mark this transaction as paid?',
+    'unpaid.confirmSub': 'It will be recorded as paid (cash) and removed from this list.', 'unpaid.confirmBtn': 'Paid',
+    'toast.paid': 'Marked as paid ✓',
     'price.mode': 'Price mode', 'price.perItem': 'Per item', 'price.final': 'Final price',
     'price.unit': 'Price (per item)', 'price.total': 'Total price',
     'svc.section': 'Service type', 'op.section': 'Operation', 'color.section': 'Color',
@@ -226,6 +233,13 @@ const I18N = {
     'newtx.date': 'التاريخ *', 'newtx.notes': 'ملاحظات إضافية', 'newtx.notesPh': 'أي تفاصيل إضافية...',
     'newtx.defaultClient': 'عميل',
     'pay.section': 'طريقة الدفع', 'pay.specify': 'حدد الطريقة', 'pay.otherPh': 'مثلاً: تحويل بنكي...', 'xh.pay': 'الدفع',
+    'hist.edit': 'تعديل', 'save.update': 'تحديث المعاملة', 'toast.updated': 'تم تحديث المعاملة ✓',
+    'edit.banner': 'جاري تعديل معاملة — اضغط تحديث للحفظ',
+    'desc.choose': '— اختر —', 'desc.addNew': '+ إضافة منتج/خدمة جديدة',
+    'nav.unpaid': 'غير مدفوع', 'unpaid.title': 'حسابات لم تُحصَّل', 'unpaid.empty': 'لا توجد معاملات غير مدفوعة',
+    'unpaid.total': 'إجمالي المستحقات', 'unpaid.markPaid': 'تم الدفع', 'unpaid.confirm': 'تسجيل هذه المعاملة كمدفوعة؟',
+    'unpaid.confirmSub': 'ستُسجل كمدفوعة (نقداً) وتُزال من هذه القائمة.', 'unpaid.confirmBtn': 'مدفوع',
+    'toast.paid': 'تم تسجيل الدفع ✓',
     'price.mode': 'وضع السعر', 'price.perItem': 'لكل قطعة', 'price.final': 'سعر نهائي',
     'price.unit': 'السعر (لكل قطعة)', 'price.total': 'السعر الإجمالي',
     'svc.section': 'نوع الخدمة', 'op.section': 'العملية', 'color.section': 'اللون',
@@ -320,6 +334,7 @@ const PAY_LABELS = {
   cash: { en: 'Cash', ar: 'كاش' },
   instapay: { en: 'InstaPay', ar: 'انستاباي' },
   vodafone: { en: 'Vodafone Cash', ar: 'فودافون كاش' },
+  notpaid: { en: 'Not Paid', ar: 'غير مدفوع' },
   other: { en: 'Other', ar: 'أخرى' },
 };
 
@@ -357,6 +372,7 @@ function applyI18n() {
     renderHistory();
     renderMachines();
     renderExpenses();
+    renderUnpaid();
     if (state.role === 'admin') { renderDashboard(); renderMachSettings(); }
   }
 }
@@ -383,6 +399,8 @@ const state = {
   selExpType: null,
   selPay: 'cash',
   engPerMeter: true,
+  editingTxId: null,
+  catalog: { books: [], office: [] },
   machines: [],           // [{id, name, order, records:[{value,date,at}]}]
   settings: null,         // {empHash, adminHash}
   online: false,          // firebase mode
@@ -420,6 +438,7 @@ const LocalStore = {
   async init() {
     state.transactions = JSON.parse(localStorage.getItem('pz_tx') || '[]');
     state.expenses = JSON.parse(localStorage.getItem('pz_exp') || '[]');
+    state.catalog = JSON.parse(localStorage.getItem('pz_catalog') || 'null') || { books: [], office: [] };
     let mc = JSON.parse(localStorage.getItem('pz_mc') || 'null');
     if (!mc) { mc = DEFAULT_MACHINES; localStorage.setItem('pz_mc', JSON.stringify(mc)); }
     state.machines = mc;
@@ -456,6 +475,10 @@ const LocalStore = {
     state.expenses = state.expenses.filter(e => e.id !== id);
     localStorage.setItem('pz_exp', JSON.stringify(state.expenses));
     refreshAfterData();
+  },
+  async saveCatalog(cat) {
+    state.catalog = cat;
+    localStorage.setItem('pz_catalog', JSON.stringify(cat));
   },
   async saveMachines(machines) {
     state.machines = machines;
@@ -512,12 +535,19 @@ const FireStore = {
       state.expenses = snap.docs.map(d => ({ ...d.data(), id: d.id }));
       refreshAfterData();
     });
+
+    // product/service catalog
+    const cRef = db.collection('settings').doc('catalog');
+    const cSnap = await cRef.get();
+    state.catalog = cSnap.exists ? cSnap.data() : { books: [], office: [] };
+    cRef.onSnapshot(snap => { if (snap.exists) state.catalog = snap.data(); });
   },
   async addTx(tx) { await db.collection('transactions').add(tx); },
   async delTx(id) { await db.collection('transactions').doc(id).delete(); },
   async updateTx(id, patch) { await db.collection('transactions').doc(id).update(patch); },
   async addExp(exp) { await db.collection('expenses').add(exp); },
   async delExp(id) { await db.collection('expenses').doc(id).delete(); },
+  async saveCatalog(cat) { state.catalog = cat; await db.collection('settings').doc('catalog').set(cat); },
   async saveMachines(machines) {
     const batch = db.batch();
     const existing = new Set(state.machines.map(m => m.id));
@@ -539,6 +569,7 @@ function refreshAfterData() {
   renderHistory();
   renderMachines();
   renderExpenses();
+  renderUnpaid();
   if (state.role === 'admin') { renderDashboard(); renderMachSettings(); }
 }
 
@@ -645,6 +676,7 @@ document.querySelectorAll('.nav-item').forEach(btn => {
     if (target === 'pageHistory') renderHistory();
     if (target === 'pageMachines') renderMachines();
     if (target === 'pageExpenses') { if (!$('expDate').value) $('expDate').value = todayStr(); renderExpenses(); }
+    if (target === 'pageUnpaid') renderUnpaid();
     if (target === 'pageDashboard') renderDashboard();
     if (target === 'pageSettings') renderMachSettings();
   });
@@ -708,7 +740,7 @@ $('serviceGrid').addEventListener('click', e => {
   state.selOp = null; state.selColor = null; state.selFace = null; state.selFinish = null;
 
   document.querySelectorAll('#subPanel .chip').forEach(c => c.classList.remove('sel', 'sel-green', 'sel-orange'));
-  $('subQty').value = 0; $('subPrice').value = '0.00';
+  $('subQty').value = ''; $('subPrice').value = '';
   $('engLength').value = ''; $('engNote').value = '';
 
   if (PAPER_TYPES.includes(state.selSvc)) {
@@ -723,7 +755,8 @@ $('serviceGrid').addEventListener('click', e => {
   } else {
     $('subPanel').classList.remove('visible');
     $('simplePanel').classList.add('visible');
-    $('simpleDesc').value = ''; $('simpleQty').value = 1; $('simplePrice').value = '0.00';
+    $('simpleDesc').value = ''; $('simpleQty').value = ''; $('simplePrice').value = '';
+    setupDescPicker();
     updateSimpleBtn();
   }
 });
@@ -742,9 +775,12 @@ $('opChips').addEventListener('click', e => {
     state.selColor = '—'; state.selFace = '—'; state.selFinish = '—';
   } else {
     $('colorRow').style.display = '';
-    $('faceRow').style.display = 'none';
-    $('finishRow').style.display = 'none';
-    $('colorChips').querySelectorAll('.chip').forEach(c => c.classList.remove('sel', 'sel-orange'));
+    $('faceRow').style.display = '';
+    $('finishRow').style.display = '';
+    state.selColor = 'black'; state.selFace = 'one'; state.selFinish = 'normal';
+    $('colorChips').querySelectorAll('.chip').forEach(c => c.classList.toggle('sel-orange', c.dataset.color === 'black'));
+    $('faceChips').querySelectorAll('.chip').forEach(c => c.classList.toggle('sel-green', c.dataset.face === 'one'));
+    $('finishChips').querySelectorAll('.chip').forEach(c => c.classList.toggle('sel-green', c.dataset.finish === 'normal'));
   }
   updateSubBtn();
 });
@@ -754,10 +790,6 @@ $('colorChips').addEventListener('click', e => {
   $('colorChips').querySelectorAll('.chip').forEach(c => c.classList.remove('sel', 'sel-orange'));
   chip.classList.add('sel-orange');
   state.selColor = chip.dataset.color;
-  state.selFace = null; state.selFinish = null;
-  $('faceRow').style.display = '';
-  $('finishRow').style.display = 'none';
-  $('faceChips').querySelectorAll('.chip').forEach(c => c.classList.remove('sel', 'sel-green'));
   updateSubBtn();
 });
 
@@ -766,14 +798,6 @@ $('faceChips').addEventListener('click', e => {
   $('faceChips').querySelectorAll('.chip').forEach(c => c.classList.remove('sel', 'sel-green'));
   chip.classList.add('sel-green');
   state.selFace = chip.dataset.face;
-  if (state.selOp === 'print' || state.selOp === 'copy') {
-    $('finishRow').style.display = '';
-    $('finishChips').querySelectorAll('.chip').forEach(c => c.classList.remove('sel', 'sel-green'));
-    $('finishChips').querySelector('[data-finish="normal"]').classList.add('sel-green');
-    state.selFinish = 'normal';
-  } else {
-    state.selFinish = '—';
-  }
   updateSubBtn();
 });
 
@@ -800,7 +824,7 @@ $('engLength').addEventListener('input', updateSubBtn);
 function updateSubBtn() {
   const q = parseInt($('subQty').value) || 0;
   const p = parseFloat($('subPrice').value) || 0;
-  const engOk = state.selSvc !== 'eng' || (parseFloat($('engLength').value) > 0);
+  const engOk = state.selSvc !== 'eng' || state.selOp === 'scan' || (parseFloat($('engLength').value) > 0);
   const optsOk = !state.selOp || state.selOp === 'scan' || (state.selColor && state.selFace && state.selFinish);
   $('btnAddSub').disabled = !(state.selOp && q > 0 && p > 0 && engOk && optsOk);
 }
@@ -811,7 +835,7 @@ function resetSubPanel() {
   $('colorRow').style.display = 'none';
   $('faceRow').style.display = 'none';
   $('finishRow').style.display = 'none';
-  $('subQty').value = 0; $('subPrice').value = '0.00';
+  $('subQty').value = ''; $('subPrice').value = '';
   $('engLength').value = ''; $('engNote').value = '';
   updateSubBtn();
 }
@@ -844,15 +868,49 @@ $('btnCancelSub').addEventListener('click', () => {
 /* ==================== SIMPLE SERVICE ==================== */
 $('simpleQty').addEventListener('input', updateSimpleBtn);
 $('simplePrice').addEventListener('input', updateSimpleBtn);
+$('simpleDesc').addEventListener('input', updateSimpleBtn);
+function setupDescPicker() {
+  const hasCatalog = state.selSvc === 'books' || state.selSvc === 'office';
+  $('descPickWrap').style.display = hasCatalog ? '' : 'none';
+  $('descNewWrap').style.display = hasCatalog ? 'none' : '';
+  if (!hasCatalog) return;
+  const items = (state.catalog && state.catalog[state.selSvc]) || [];
+  $('simpleDescSel').innerHTML = `<option value="">${t('desc.choose')}</option>` +
+    items.map(x => `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('') +
+    `<option value="__new__">${t('desc.addNew')}</option>`;
+  $('simpleDescSel').value = '';
+}
+$('simpleDescSel').addEventListener('change', () => {
+  const isNew = $('simpleDescSel').value === '__new__';
+  $('descNewWrap').style.display = isNew ? '' : 'none';
+  if (isNew) { $('simpleDesc').value = ''; $('simpleDesc').focus(); }
+  updateSimpleBtn();
+});
 function updateSimpleBtn() {
   const q = parseInt($('simpleQty').value) || 0;
   const p = parseFloat($('simplePrice').value) || 0;
-  $('btnAddSimple').disabled = !(q > 0 && p > 0);
+  let descOk = true;
+  if (state.selSvc === 'books' || state.selSvc === 'office') {
+    const v = $('simpleDescSel').value;
+    descOk = !!(v && (v !== '__new__' || $('simpleDesc').value.trim()));
+  }
+  $('btnAddSimple').disabled = !(q > 0 && p > 0 && descOk);
 }
 $('btnAddSimple').addEventListener('click', () => {
   const q = parseInt($('simpleQty').value) || 0;
   const p = parseFloat($('simplePrice').value) || 0;
-  const d = $('simpleDesc').value.trim() || null;
+  let d = $('simpleDesc').value.trim() || null;
+  if (state.selSvc === 'books' || state.selSvc === 'office') {
+    const v = $('simpleDescSel').value;
+    if (v && v !== '__new__') d = v;
+    if (v === '__new__' && d) {
+      const cat = { books: [], office: [], ...(state.catalog || {}) };
+      if (!cat[state.selSvc].includes(d)) {
+        cat[state.selSvc] = [...cat[state.selSvc], d];
+        store.saveCatalog(cat);
+      }
+    }
+  }
   state.invoice.push({
     id: Date.now() + Math.random(), svc: state.selSvc, op: null,
     color: '—', face: '—', finish: '—', desc: d,
@@ -894,7 +952,7 @@ $('btnAddCustom').addEventListener('click', () => {
   });
   renderInvoice();
   toast(t('toast.added'));
-  $('customName').value = ''; $('customQty').value = 1; $('customPrice').value = '0.00';
+  $('customName').value = ''; $('customQty').value = ''; $('customPrice').value = '';
   $('customSvc').classList.remove('expanded');
   updateCustomBtn();
 });
@@ -946,7 +1004,32 @@ $('invoiceBody').addEventListener('click', e => {
   state.invoice = state.invoice.filter(it => String(it.id) !== btn.dataset.id);
   renderInvoice();
 });
-$('btnClearInv').addEventListener('click', () => { state.invoice = []; renderInvoice(); });
+$('btnClearInv').addEventListener('click', () => { state.invoice = []; renderInvoice(); exitEditMode(); });
+
+/* ==================== EDIT TRANSACTION (admin) ==================== */
+function setSaveTxLabel() {
+  const span = $('btnSaveTx').querySelector('[data-i18n]');
+  if (span) { span.dataset.i18n = state.editingTxId ? 'save.update' : 'save.tx'; span.textContent = t(state.editingTxId ? 'save.update' : 'save.tx'); }
+}
+function exitEditMode() {
+  state.editingTxId = null;
+  setSaveTxLabel();
+}
+function loadTxForEdit(tx) {
+  state.editingTxId = tx.id;
+  $('clientName').value = tx.client === t('newtx.defaultClient') ? '' : (tx.client || '');
+  $('txDate').value = tx.date || todayStr();
+  $('txNotes').value = tx.notes || '';
+  state.selPay = tx.payMethod || 'cash';
+  $('payChips').querySelectorAll('.chip').forEach(c => c.classList.toggle('sel', c.dataset.pay === state.selPay));
+  $('payOtherField').style.display = state.selPay === 'other' ? '' : 'none';
+  $('payOtherName').value = tx.payOther || '';
+  state.invoice = (tx.items || []).map(it => ({ ...it, id: Date.now() + Math.random() }));
+  renderInvoice();
+  setSaveTxLabel();
+  navigateTo('pageNew');
+  toast(t('edit.banner'));
+}
 
 /* ==================== SAVE TRANSACTION ==================== */
 $('btnSaveTx').addEventListener('click', async () => {
@@ -969,8 +1052,15 @@ $('btnSaveTx').addEventListener('click', async () => {
     deviceId: state.deviceId,
   };
   try {
-    await store.addTx(tx);
-    toast(t('toast.saved'));
+    if (state.editingTxId) {
+      const { createdAt, createdBy, deviceId, ...patch } = tx;
+      await store.updateTx(state.editingTxId, { ...patch, editedAt: new Date().toISOString(), editedBy: state.role });
+      toast(t('toast.updated'));
+      exitEditMode();
+    } else {
+      await store.addTx(tx);
+      toast(t('toast.saved'));
+    }
     state.invoice = [];
     renderInvoice();
     $('clientName').value = ''; $('txNotes').value = ''; $('txDate').value = todayStr();
@@ -1035,24 +1125,26 @@ function renderHistory() {
     }))].slice(0, 6).join('');
     const engTotal = (tx.items || []).filter(it => it.engLength > 0).reduce((s, it) => s + it.engLength, 0);
     const byBadge = tx.createdBy ? `<span class="by-badge">${t(tx.createdBy === 'admin' ? 'role.admin' : 'role.employee')}</span>` : '';
+    const unpaidBadge = tx.payMethod === 'notpaid' ? `<span class="mistake-badge"><i data-lucide="clock"></i> ${payLabel(tx)}</span>` : '';
     const mistakeBadge = tx.mistake ? `<span class="mistake-badge"><i data-lucide="alert-triangle"></i> ${t('hist.mistake')}</span>` : '';
     const delBtn = canDeleteTx(tx) ? `<button class="btn-delete-transaction" data-id="${tx.id}">${t('hist.delete')}</button>` : '';
+    const editBtn = state.role === 'admin' ? `<button class="btn-mistake-toggle" data-edit="${tx.id}"><i data-lucide="pencil"></i> ${t('hist.edit')}</button>` : '';
     const mistakeBtn = (state.role !== 'admin' || tx.mistake)
       ? `<button class="btn-mistake-toggle" data-id="${tx.id}"><i data-lucide="alert-triangle"></i> ${t(tx.mistake ? 'hist.unmarkMistake' : 'hist.markMistake')}</button>`
       : '';
     return `<div class="history-card${tx.mistake ? ' mistaken' : ''}">
       <div class="history-card-head">
-        <span class="client">${escapeHtml(tx.client)}${byBadge}${mistakeBadge}</span>
+        <span class="client">${escapeHtml(tx.client)}${byBadge}${unpaidBadge}${mistakeBadge}</span>
         <span class="date">${fmtDate(tx.date)}</span>
       </div>
       ${tx.notes ? `<div class="notes">${escapeHtml(tx.notes)}</div>` : ''}
-      <div class="history-card-tags">${tx.payMethod ? `<span class="tag tag-finish">${escapeHtml(payLabel(tx))}</span>` : ''}${tagSet}</div>
+      <div class="history-card-tags">${tx.payMethod ? `<span class="tag ${tx.payMethod === 'notpaid' ? 'tag-notpaid' : 'tag-finish'}">${escapeHtml(payLabel(tx))}</span>` : ''}${tagSet}</div>
       ${engTotal > 0 ? `<div style="font-size:.72rem;color:var(--teal);margin-bottom:4px;font-weight:700"><i data-lucide="ruler"></i> ${engTotal.toFixed(2)} ${t('eng.m')}</div>` : ''}
       <div class="history-card-bottom">
         <span class="items-count">${tx.pieces} ${t('hist.pieces')} · ${(tx.items || []).length} ${t('hist.items')}</span>
         <span class="total">${fmtMoney(tx.total || 0)}</span>
       </div>
-      ${(mistakeBtn || delBtn) ? `<div class="history-card-actions">${mistakeBtn}${delBtn}</div>` : ''}
+      ${(mistakeBtn || editBtn || delBtn) ? `<div class="history-card-actions">${mistakeBtn}${editBtn}${delBtn}</div>` : ''}
     </div>`;
   }).join('');
 
@@ -1068,7 +1160,13 @@ function renderHistory() {
       });
     });
   });
-  list.querySelectorAll('.btn-mistake-toggle').forEach(btn => {
+  list.querySelectorAll('[data-edit]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tx = state.transactions.find(t2 => String(t2.id) === btn.dataset.edit);
+      if (tx) loadTxForEdit(tx);
+    });
+  });
+  list.querySelectorAll('.btn-mistake-toggle:not([data-edit])').forEach(btn => {
     btn.addEventListener('click', () => {
       const tx = state.transactions.find(t2 => String(t2.id) === btn.dataset.id);
       if (!tx) return;
@@ -1242,6 +1340,46 @@ function renderExpenses() {
         toast(t('toast.deleted'));
         renderExpenses();
       });
+    });
+  });
+  refreshIcons();
+}
+
+/* ==================== UNPAID / RECEIVABLES ==================== */
+function renderUnpaid() {
+  if (!$('unpaidList')) return;
+  const unpaid = state.transactions.filter(tx => tx.payMethod === 'notpaid' && !tx.mistake);
+  $('unpaidTotalVal').textContent = fmtMoney(unpaid.reduce((s, tx) => s + (tx.total || 0), 0));
+  const list = $('unpaidList');
+  if (!unpaid.length) {
+    list.innerHTML = `<div class="empty-big"><div class="empty-icon"><i data-lucide="check-circle"></i></div><p>${t('unpaid.empty')}</p></div>`;
+    refreshIcons();
+    return;
+  }
+  list.innerHTML = unpaid.map(tx => `
+    <div class="history-card">
+      <div class="history-card-head">
+        <span class="client">${escapeHtml(tx.client)}</span>
+        <span class="date">${fmtDate(tx.date)}</span>
+      </div>
+      ${tx.notes ? `<div class="notes">${escapeHtml(tx.notes)}</div>` : ''}
+      <div class="history-card-bottom">
+        <span class="items-count">${tx.pieces} ${t('hist.pieces')} · ${(tx.items || []).length} ${t('hist.items')}</span>
+        <span class="total" style="color:var(--red)">${fmtMoney(tx.total || 0)}</span>
+      </div>
+      <div class="history-card-actions">
+        <button class="btn-mistake-toggle" data-paid="${tx.id}" style="color:var(--green)"><i data-lucide="check"></i> ${t('unpaid.markPaid')}</button>
+      </div>
+    </div>`).join('');
+  list.querySelectorAll('[data-paid]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tx = state.transactions.find(t2 => String(t2.id) === btn.dataset.paid);
+      if (!tx) return;
+      askConfirm(t('unpaid.confirm'), t('unpaid.confirmSub'), async () => {
+        await store.updateTx(tx.id, { payMethod: 'cash', paidAt: new Date().toISOString() });
+        toast(t('toast.paid'));
+        renderUnpaid();
+      }, t('unpaid.confirmBtn'));
     });
   });
   refreshIcons();
